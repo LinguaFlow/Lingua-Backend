@@ -15,7 +15,6 @@ ncp:
 # SQS 큐 설정
 queue:
   json-event-url: ${SQS_QUEUE_URL}
-  # 추가: 큐 이름만 별도로 설정
   json-event-name: ${SQS_QUEUE_NAME:JsonEvent}
 
 # Flask 서버 주소
