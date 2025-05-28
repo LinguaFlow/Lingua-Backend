@@ -1,0 +1,42 @@
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ['Docker Image CI']
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      EC2_IP: ${{ secrets.EC2_HOST }}
+    steps:
+      - name: Setup SSH Key and Scan EC2 Host
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_IP }} >> ~/.ssh/known_hosts
+      - name: Execute Deployment Commands on EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_IP }} "
+          docker pull hwangjungseok/lingua-backend:latest;
+          docker stop nestjs-bapull;
+          docker rm nestjs-bapull;
+          IMAGE_ID=$(docker images -q hwangjungseok/lingua-backend:latest | head -n 1);
+          docker image prune -f;
+          if [ ! -z \"$IMAGE_ID\" ]; then
+            docker images -q | grep -v $IMAGE_ID | xargs -r docker rmi;
+          fi;
+          docker run -d -p 3000:3000 \
+            --env-file /home/ubuntu/.env \
+            -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
+            -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+            -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
+            -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
+            -e NODE_ENV='EC2' \
+            --restart always \
+            --name nestjs-bapull \
+            hwangjungseok/lingua-backend:latest"
