@@ -34,6 +34,12 @@ jobs:
             --env-file /home/ubuntu/.env \
             -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
             -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+            -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+            -e S3_ENDPOINT='${{ secrets.S3_ENDPOINT }}' \
+            -e AWS_REGION='${{ secrets.AWS_REGION }}' \
+            -e SQS_QUEUE_URL='${{ secrets.SQS_QUEUE_URL }}' \
+            -e SQS_QUEUE_NAME='${{ secrets.SQS_QUEUE_NAME }}' \
+            -e KANJI_API_BASE_URL='${{ secrets.KANJI_API_BASE_URL }}' \
             -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
             -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
             -e NODE_ENV='EC2' \
