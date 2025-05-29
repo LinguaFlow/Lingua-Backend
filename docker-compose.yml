@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  linguas-backend:
+    build: .
+    ports:
+      - "8080:8080"
+    container_name: linguas
