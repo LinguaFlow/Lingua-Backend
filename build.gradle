@@ -4,37 +4,52 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'backend-lingua'
+group   = 'backend-lingua'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+	toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+	compileOnly { extendsFrom annotationProcessor }
 }
 
-repositories {
-	mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	// Aws Java Sdk S3
-	implementation 'software.amazon.awssdk:s3:2.20.0'
-	//lombok
+	/* ───────── Spring Boot ───────── */
+	implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	/* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
+	implementation 'org.hibernate.orm:hibernate-spatial'
+
+	/* ───────── AWS SDK v2 ───────── */
+	implementation platform('software.amazon.awssdk:bom:2.25.14')
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:sqs'
+
+	/* ───────── Spring-Cloud-AWS (SQS) ───────── */
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.0.4'
+
+	/* ───────── 부가 라이브러리 ───────── */
+	// Hibernate 6.4 호환 버전으로 업데이트
+	implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
+
+	/* ───────── DB Driver ───────── */
+	// Spring Boot 3.x 호환 MySQL 커넥터로 변경
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	/* ───────── Lombok ───────── */
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	//test code lombok
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	/* ───────── Test ───────── */
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.named('test') {
