@@ -19,31 +19,21 @@ public class S3Service {
     private final S3Properties s3Properties;
     private final S3Client s3Client;
 
-    public void update(MultipartFile file, String keyName) {
-        String fileExtension = getFileExtension(keyName);
-        String newPdfFileName = keyName + fileExtension;
+    public String upload(MultipartFile file) {
+        String key = UUID.randomUUID() + "_" + file.getOriginalFilename();
         try {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(s3Properties.getS3().getBucket())
-                    .key(newPdfFileName)
+                    .key(key)
                     .contentLength(file.getSize())
                     .contentType(file.getContentType())
                     .build();
 
-            s3Client.putObject(putObjectRequest,
+            s3Client.putObject(request,
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-            log.info("파일 업로드 성공 - key: {}", newPdfFileName);
+            return key;
         } catch (IOException e) {
-            log.error("파일 업로드 실패 - key: {}", newPdfFileName, e);
-            throw new RuntimeException("파일 업로드 실패", e);
+            throw new RuntimeException("S3 upload failed", e);
         }
-    }
-
-    private String getFileExtension(String filename) {
-        if (filename == null || filename.lastIndexOf(".") == -1) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf("."));
     }
 }
