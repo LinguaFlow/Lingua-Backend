@@ -3,5 +3,14 @@ services:
   linguas-backend:
     build: .
     ports:
-      - "8080:8080"
-    container_name: linguas
+      - "127.0.0.1:8080:8080"  # localhost에만 바인딩
+    container_name: linguas-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+    networks:
+      - linguas-network
+
+networks:
+  linguas-network:
+    driver: bridge

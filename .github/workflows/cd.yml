@@ -30,7 +30,7 @@ jobs:
           if [ ! -z \"$IMAGE_ID\" ]; then
             docker images -q | grep -v $IMAGE_ID | xargs -r docker rmi;
           fi;
-          docker run -d -p 8080:8080 \
+          docker run -d -p 127.0.0.1:8080:8080 \
             --env-file /home/ubuntu/.env \
             -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
             -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
