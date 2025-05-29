@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: s3
+    active: prod
   cloud:
     aws:
       sqs:
