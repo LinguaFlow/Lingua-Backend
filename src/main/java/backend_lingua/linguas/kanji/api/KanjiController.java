@@ -6,6 +6,7 @@ import backend_lingua.linguas.kanji.entity.TaskStatus;
 
 import backend_lingua.linguas.example.service.ExampleService;
 import backend_lingua.linguas.kanji.service.KanjiService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -141,5 +142,10 @@ public class KanjiController {
             log.error("Test upload error", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Test upload failed");
         }
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("test");
     }
 }
