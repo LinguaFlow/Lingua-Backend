@@ -11,24 +11,41 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      EC2_IP: ${{ secrets.EC2_HOST }}
+      BASTION_IP: ${{ secrets.EC2_HOST }}    
+      BACKEND_IP: ${{ secrets.BACKEND_HOST }}
     steps:
-      - name: Setup SSH Key and Scan EC2 Host
+      - name: Setup SSH Keys and Config
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ env.EC2_IP }} >> ~/.ssh/known_hosts
-      - name: Execute Deployment Commands on EC2
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/bastion_key
+          chmod 600 ~/.ssh/bastion_key
+          
+          # SSH config 파일 생성
+          cat > ~/.ssh/config << EOF
+          Host bastion
+            HostName ${{ env.BASTION_IP }}
+            User ec2-user
+            IdentityFile ~/.ssh/bastion_key
+            StrictHostKeyChecking no
+          
+          Host backend
+            HostName ${{ env.BACKEND_IP }}
+            User ubuntu
+            IdentityFile ~/.ssh/bastion_key
+            ProxyJump bastion
+            StrictHostKeyChecking no
+          EOF
+
+      - name: Execute Deployment Commands on Backend
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_IP }} "
+          ssh backend "
           docker pull hwangjungseok/lingua-backend:latest;
-          docker stop lingua-backend;
-          docker rm lingua-backend;
-          IMAGE_ID=$(docker images -q hwangjungseok/lingua-backend:latest | head -n 1);
+          docker stop lingua-backend || true;
+          docker rm lingua-backend || true;
+          IMAGE_ID=\$(docker images -q hwangjungseok/lingua-backend:latest | head -n 1);
           docker image prune -f;
-          if [ ! -z \"$IMAGE_ID\" ]; then
-            docker images -q | grep -v $IMAGE_ID | xargs -r docker rmi;
+          if [ ! -z \"\$IMAGE_ID\" ]; then
+            docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi;
           fi;
           docker run -d -p 8080:8080 \
             --env-file /home/ubuntu/.env \
