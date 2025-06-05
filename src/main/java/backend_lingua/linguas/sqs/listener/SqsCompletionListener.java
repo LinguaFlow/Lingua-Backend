@@ -28,10 +28,10 @@ public class SqsCompletionListener {
             // JSON 파싱
             JsonNode signal = objectMapper.readTree(messageBody);
 
-            String status = signal.path("status").asText();
+            String complete = signal.path("status").asText();
             String bookName = signal.path("book_name").asText();
 
-            if ("completed".equals(status) && !bookName.isEmpty()) {
+            if ("completed".equals(complete) && !bookName.isEmpty()) {
                 log.info("✅ 작업 완료 확인 - 책: {}", bookName);
 
                 // 🎯 핵심: Flask에서 데이터 가져오기 (다음 단계)
@@ -44,7 +44,7 @@ public class SqsCompletionListener {
     }
 
     private void processCompletedTask(String bookName) {
-        // 3단계로 넘어감: Flask에서 데이터 가져오기
+
         Map<String, Object> flaskData = flaskDataService.fetchAllKanjiDataFromFlask();
 
         if (flaskData != null) {
