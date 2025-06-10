@@ -19,7 +19,7 @@ public class ExampleService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${kanji.api.url}/api/examples")
+    @Value("${kanji.api.url}/api/generate")
     private String examplesApiUrl;
 
     public ExampleSentencesResponse generateExamples(ExampleSentenceRequest request) {
