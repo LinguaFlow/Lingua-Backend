@@ -4,7 +4,7 @@ spring:
   cloud:
     aws:
       sqs:
-        enabled: false
+        enabled: true
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/lingua}
     driver-class-name: com.mysql.cj.jdbc.Driver
