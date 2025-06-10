@@ -4,9 +4,8 @@ import backend_lingua.linguas.kanji.dto.response.KanjiVocabularyListResponse;
 import backend_lingua.linguas.kanji.entity.Kanji;
 import backend_lingua.linguas.kanji.entity.TaskStatus;
 
-import backend_lingua.linguas.example.service.ExampleService;
+import backend_lingua.linguas.kanji.service.FlaskService;
 import backend_lingua.linguas.kanji.service.KanjiService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,13 +23,9 @@ import java.util.Map;
 public class KanjiController {
 
     private final KanjiService kanjiService;
-    private final ExampleService exampleService;
 
-    /**
-     * 파일 업로드 API
-     * 파일을 S3에 업로드하고 작업 ID를 반환합니다.
-     * Python 서버가 S3 이벤트를 통해 자동으로 처리합니다.
-     */
+    private final FlaskService dataService;
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> upload(@RequestParam MultipartFile file) {
         try {
@@ -54,10 +49,6 @@ public class KanjiController {
         }
     }
 
-    /**
-     * 작업 상태 조회 API
-     * 작업 ID로 현재 상태를 조회합니다.
-     */
     @GetMapping("/{id}/status")
     public ResponseEntity<Map<String, String>> status(@PathVariable Long id) {
         try {
@@ -86,10 +77,6 @@ public class KanjiController {
         }
     }
 
-    /**
-     * 작업 결과 조회 API
-     * 작업이 완료된 경우 결과 데이터를 반환합니다.
-     */
     @GetMapping("/{id}/result")
     public ResponseEntity<KanjiVocabularyListResponse> result(@PathVariable Long id) {
         try {
@@ -126,11 +113,6 @@ public class KanjiController {
         }
     }
 
-
-    /**
-     * 테스트용 API
-     * 새 아키텍처에 맞게 메시지 추가
-     */
     @PostMapping("/test-upload")
     public ResponseEntity<KanjiVocabularyListResponse> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
@@ -145,7 +127,8 @@ public class KanjiController {
     }
 
     @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("test");
+    public ResponseEntity<Map<String, Object>> test() {
+        Map<String, Object> stringObjectMap = dataService.fetchAll();
+        return ResponseEntity.ok().body(stringObjectMap);
     }
 }

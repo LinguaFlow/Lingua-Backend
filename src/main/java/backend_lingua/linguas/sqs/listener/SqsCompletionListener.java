@@ -1,6 +1,7 @@
 package backend_lingua.linguas.sqs.listener;
 
 import backend_lingua.linguas.kanji.service.FlaskDataService;
+import backend_lingua.linguas.kanji.service.FlaskService;
 import backend_lingua.linguas.kanji.service.KanjiService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,7 @@ import java.util.Map;
 public class SqsCompletionListener {
 
     private final KanjiService kanjiService;
-    private final FlaskDataService flaskDataService;
+    private final FlaskService flaskDataService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @SqsListener("#{jsonEventQueueName}")
@@ -50,23 +51,10 @@ public class SqsCompletionListener {
     }
 
     private void processCompletedTask(String bookName) {
-        log.info("🚀 Flask 데이터 요청 시작 - 책: {}", bookName);
+        log.info("✅ Flask 데이터 수신 완료, DB 업데이트 시작");
 
-        try {
-            Map<String, Object> flaskData = flaskDataService.fetchAllKanjiDataFromFlask();
+        kanjiService.processKanjiData(bookName, flaskDataService.fetchAll().get("details"));
 
-            if (flaskData != null) {
-                log.info("✅ Flask 데이터 수신 완료, DB 업데이트 시작");
-
-                // 5단계: DB 업데이트
-                kanjiService.processKanjiData(bookName, flaskData.get("details"));
-
-                log.info("✅ 전체 처리 완료 - 책: {}", bookName);
-            } else {
-                log.error("❌ Flask 데이터 가져오기 실패 - 책: {}", bookName);
-            }
-        } catch (Exception e) {
-            log.error("❌ 완료된 작업 처리 중 오류 발생 - 책: {}", bookName, e);
-        }
+        log.info("✅ 전체 처리 완료 - 책: {}", bookName);
     }
 }
