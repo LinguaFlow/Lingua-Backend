@@ -26,6 +26,8 @@ dependencies {
 
 	/* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
 	implementation 'org.hibernate.orm:hibernate-spatial'
+	/* ───────── Prometheus ───────── */
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.14.5'
 
 	/* ───────── AWS SDK v2 ───────── */
 	implementation platform('software.amazon.awssdk:bom:2.25.14')
