@@ -23,6 +23,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.0'
 
 	/* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
 	implementation 'org.hibernate.orm:hibernate-spatial'
