@@ -5,8 +5,8 @@ ncp:
   cloud:
     aws:
       credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
+        access-key: ${AWS_ACCESS_KEY:dummy-access-key}
+        secret-key: ${AWS_SECRET_KEY:dummy-secret-key}
       s3:
         bucket: ${S3_BUCKET_NAME:pdf-bucket01}
         endpoint: ${S3_ENDPOINT:https://s3.ap-northeast-2.amazonaws.com}
@@ -14,7 +14,7 @@ ncp:
 
 # SQS 큐 설정
 queue:
-  json-event-url: ${SQS_QUEUE_URL}
+  json-event-url: ${SQS_QUEUE_URL:dummy-queue-url}
   json-event-name: ${SQS_QUEUE_NAME:JsonEvent}
 
 # Flask 서버 주소
@@ -27,9 +27,9 @@ spring:
   cloud:
     aws:
       sqs:
-        enabled: true
+        enabled: ${SQS_ENABLED:false}  # 기본값 false
       region:
         static: ${AWS_REGION:ap-northeast-2}
       credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
+        access-key: ${AWS_ACCESS_KEY:dummy-access-key}
+        secret-key: ${AWS_SECRET_KEY:dummy-secret-key}
