@@ -5,35 +5,39 @@ spring:
     aws:
       sqs:
         enabled: false
-  # MySQL 데이터소스 설정
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/lingua}
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
-  # JPA / Hibernate 설정
+
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        # MySQL8 Dialect
+
         dialect: org.hibernate.dialect.MySQL8Dialect
-        # 기본 페치 사이즈 (연관 엔티티 조회)
+
         default_batch_fetch_size: 100
-        # JDBC 배치 크기 (insert/update 묶음)
+
         jdbc:
           batch_size: 50
-        # 배치 INSERT/UPDATE 시 엔티티 정렬
+
         order_inserts: true
         order_updates: true
-        # SQL 로그 포맷팅 및 강조
+
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
 
-# Flask API 설정 - spring 속성과 같은 레벨에 위치해야 함
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info
+
 kanji:
   api:
     url: ${KANJI_API_URL:http://127.0.0.1:3000}
