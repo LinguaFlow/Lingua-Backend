@@ -24,9 +24,7 @@ public class S3Config {
         );
 
         return S3Client.builder()
-                // 엔드포인트 URL 설정 (ex. http://localhost:9000 과 같이 로컬 또는 커스텀 엔드포인트)
                 .endpointOverride(URI.create(properties.getS3().getEndpoint()))
-                // AWS 리전 설정
                 .region(Region.of(properties.getS3().getRegion()))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .build();

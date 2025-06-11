@@ -11,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.util.Collections.singletonMap;
 
 @Slf4j
 @Service
@@ -32,11 +32,12 @@ public class KanjiService {
         return saveKanjiTask(file.getOriginalFilename(), s3Key);
     }
 
-    private String uploadFileToS3(MultipartFile file) {
+    public String uploadFileToS3(MultipartFile file) {
         return s3Bucket.upload(file);
     }
 
-    private Long saveKanjiTask(String fileName, String s3Key) {
+    @Transactional
+    public Long saveKanjiTask(String fileName, String s3Key) {
         Kanji kanji = Kanji.builder()
                 .bookName(Optional.ofNullable(fileName).orElse("unnamed"))
                 .s3Key(s3Key)
@@ -45,15 +46,11 @@ public class KanjiService {
 
         repository.save(kanji);
 
-        log.info("작업 생성 완료 - id: {}, 상태: {}, 코드: {}, S3 키: {}", kanji.getId(), TaskStatus.PENDING.getStatus(), TaskStatus.PENDING.getCode(), s3Key);
-
         return kanji.getId();
     }
 
     @Transactional
     public void processKanjiData(String bookName, Object kanjiDetails) {
-        log.info("Python에서 처리된 책 데이터 수신 - book_name: {}, 항목 수: {}", bookName, (kanjiDetails instanceof Iterable) ? ((Iterable<?>) kanjiDetails).spliterator().getExactSizeIfKnown() : -1);
-
         String normalizedKey = bookName;
 
         if (normalizedKey.startsWith("./s3PDF/")) {
@@ -64,31 +61,23 @@ public class KanjiService {
             normalizedKey = normalizedKey.substring(normalizedKey.indexOf("s3PDF/") + 6);
         }
 
-        String s3Key = normalizedKey;
+        var kanji = findKanjiByS3Key(normalizedKey);
 
-        Kanji kanji = repository.findByS3Key(s3Key).orElseThrow(() -> new IllegalArgumentException(""));
-
-        Map<String, Object> bookData = new HashMap<>();
-        bookData.put("details", kanjiDetails);
+        Map<String, Object> bookData = singletonMap("details", kanjiDetails);
 
         kanji.completeProcessing(bookData);
 
         repository.save(kanji);
-
-        log.info("작업 완료 - id: {}, 상태: {}, 코드: {}", kanji.getId(), TaskStatus.DONE.getStatus(), TaskStatus.DONE.getCode());
     }
 
+    @Transactional
+    public Kanji findKanjiByS3Key(String s3Key) {
+        return repository.findByS3Key(s3Key)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
+    }
+
+    @Transactional
     public Kanji get(Long id) {
-        Kanji kanji = repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
-
-        TaskStatus status = kanji.getStatus();
-        log.info("작업 조회 - id: {}, 상태: {}, 코드: {}", id, status.getStatus(), status.getCode());
-
-        return kanji;
-    }
-
-    /* Test을 위한 메소드 추후 삭제 예정 */
-    public Kanji getKanjis() {
-        return repository.findById(22L).orElseThrow(() -> new IllegalArgumentException("Test entry not found"));
+        return repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_DATA_PROCESSING_ERROR));
     }
 }
