@@ -113,19 +113,6 @@ public class KanjiController {
         }
     }
 
-    @PostMapping("/test-upload")
-    public ResponseEntity<KanjiVocabularyListResponse> uploadFile(@RequestParam("file") MultipartFile file) {
-        try {
-            Kanji kanji = kanjiService.getKanjis();
-            return ResponseEntity.ok()
-                    .header("X-Test", "true")
-                    .body(KanjiVocabularyListResponse.from(kanji));
-        } catch (Exception e) {
-            log.error("Test upload error", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Test upload failed");
-        }
-    }
-
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> test() {
         Map<String, Object> stringObjectMap = dataService.fetchAll();

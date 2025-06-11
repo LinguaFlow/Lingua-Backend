@@ -12,22 +12,19 @@ ncp:
         endpoint: ${S3_ENDPOINT:https://s3.ap-northeast-2.amazonaws.com}
         region: ${AWS_REGION:ap-northeast-2}
 
-# SQS 큐 설정
 queue:
   json-event-url: ${SQS_QUEUE_URL:dummy-queue-url}
   json-event-name: ${SQS_QUEUE_NAME:JsonEvent}
 
-# Flask 서버 주소
 kanji:
   api:
     base-url: ${KANJI_API_BASE_URL}
 
-# Spring Cloud AWS SQS 설정
 spring:
   cloud:
     aws:
       sqs:
-        enabled: ${SQS_ENABLED:false}  # 기본값 false
+        enabled: ${SQS_ENABLED:true}
       region:
         static: ${AWS_REGION:ap-northeast-2}
       credentials:
