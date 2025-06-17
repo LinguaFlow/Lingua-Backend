@@ -12,9 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -27,13 +25,9 @@ public class KanjiService {
     @Transactional
     public Long createKanjiTask(MultipartFile file) {
 
-        String s3Key = uploadFileToS3(file);
+        String s3Key = s3Bucket.upload(file);
 
         return saveKanjiTask(file.getOriginalFilename(), s3Key);
-    }
-
-    private String uploadFileToS3(MultipartFile file) {
-        return s3Bucket.upload(file);
     }
 
     private Long saveKanjiTask(String fileName, String s3Key) {
@@ -45,46 +39,38 @@ public class KanjiService {
 
         repository.save(kanji);
 
-        log.info("작업 생성 완료 - id: {}, 상태: {}, 코드: {}, S3 키: {}", kanji.getId(), TaskStatus.PENDING.getStatus(), TaskStatus.PENDING.getCode(), s3Key);
-
         return kanji.getId();
     }
 
     @Transactional
     public void processKanjiData(String bookName, Object kanjiDetails) {
-        log.info("Python에서 처리된 책 데이터 수신 - book_name: {}, 항목 수: {}", bookName, (kanjiDetails instanceof Iterable) ? ((Iterable<?>) kanjiDetails).spliterator().getExactSizeIfKnown() : -1);
+        String s3Key = bookName;
 
-        String normalizedKey = bookName;
-
-        if (normalizedKey.startsWith("./s3PDF/")) {
-            normalizedKey = normalizedKey.substring(2); // "./" 제거
+        if (s3Key.startsWith("s3PDF/")) {
+            s3Key = s3Key.substring(6); // "s3PDF/" 제거
         }
 
-        if (normalizedKey.contains("s3PDF/")) {
-            normalizedKey = normalizedKey.substring(normalizedKey.indexOf("s3PDF/") + 6);
+        if (s3Key.startsWith("./s3PDF/")) {
+            s3Key = s3Key.substring(8); // "./s3PDF/" 제거
         }
 
-        String s3Key = normalizedKey;
+        if (s3Key.contains("/")) {
+            s3Key = s3Key.substring(s3Key.lastIndexOf("/") + 1);
+        }
 
-        Kanji kanji = repository.findByS3Key(s3Key).orElseThrow(() -> new IllegalArgumentException(""));
+        var kanji = repository.findByS3Key(s3Key).orElseThrow(()
+                -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
 
-        Map<String, Object> bookData = new HashMap<>();
-        bookData.put("details", kanjiDetails);
+        Map<String, Object> bookData = Collections.singletonMap("details", kanjiDetails);
 
         kanji.completeProcessing(bookData);
 
         repository.save(kanji);
-
-        log.info("작업 완료 - id: {}, 상태: {}, 코드: {}", kanji.getId(), TaskStatus.DONE.getStatus(), TaskStatus.DONE.getCode());
     }
 
+    @Transactional
     public Kanji get(Long id) {
-        Kanji kanji = repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
-
-        TaskStatus status = kanji.getStatus();
-        log.info("작업 조회 - id: {}, 상태: {}, 코드: {}", id, status.getStatus(), status.getCode());
-
-        return kanji;
+        return repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
     }
 
 }
