@@ -60,7 +60,7 @@ jobs:
             -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
             -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
             -e NODE_ENV='EC2' \
-            -e JAVA_OPTS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }}' \
+            -e JAVA_OPTS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=lingua-backend-001 -Dpinpoint.applicationName=lingua-backend' \
             -v \$(pwd)/pinpoint-agent-2.5.4:/pinpoint-agent \
             --restart always \
             --name lingua-backend \
