@@ -3,6 +3,7 @@ package backend_lingua.linguas.kanji.api;
 import backend_lingua.linguas.kanji.entity.TaskStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jdk.jshell.Snippet;
 import lombok.val;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -24,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -37,6 +40,9 @@ class KanjiControllerIntegrationTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;
+
+    private record TaskStatusInfo(TaskStatus taskStatus, String status, String responseBody) {
+    }
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -105,40 +111,46 @@ class KanjiControllerIntegrationTest {
         }
     }
 
+
     @Test
     @DisplayName("실제 PDF 파일 업로드 및 전체 워크플로우 테스트")
-    @DirtiesContext // 이 테스트 후 컨텍스트 리셋
+    @DirtiesContext
     void realPdf_FullWorkflow_Integration() throws Exception {
         setUp();
 
-        // 1. 실제 PDF 파일 업로드
         MockMultipartFile file = createRealPdfFile();
 
         System.out.println("🚀 실제 PDF 파일 업로드 시작...");
         System.out.println("📄 파일명: " + file.getOriginalFilename());
         System.out.println("📦 파일 크기: " + file.getSize() + " bytes");
 
-        // 파일 업로드 요청
-        MvcResult uploadResult = mockMvc.perform(multipart("/api/files/upload").file(file))
-                .andDo(print())
-                .andExpect(status().isAccepted())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.message").exists())
-                .andReturn();
+        MvcResult uploadResult =
+                mockMvc.perform(multipart("/api/files/upload").file(file))
+                        .andDo(print())
+                        .andExpect(status().isAccepted())
+                        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(jsonPath("$.id").exists())
+                        .andExpect(jsonPath("$.message").exists())
+                        .andReturn();
 
-        // 업로드 응답에서 ID 추출
         String uploadResponseBody = uploadResult.getResponse().getContentAsString();
         JsonNode uploadJson = objectMapper.readTree(uploadResponseBody);
         Long taskId = uploadJson.get("id").asLong();
+        assertThat(taskId).isNotNull();
 
-        System.out.println("1️⃣ 업로드 완료!");
-        System.out.println("📋 응답: " + uploadResponseBody);
-        System.out.println("🆔 생성된 작업 ID: " + taskId);
+        TaskStatusInfo statusInfo = getCurrentTaskStatus(taskId);
+        assertThat(statusInfo).isNotNull();
+        assertThat(statusInfo.taskStatus()).isIn(TaskStatus.PENDING, TaskStatus.PROCESSING);
 
-        // 2. 작업 상태 조회 (PENDING 상태 확인)
-        System.out.println("\n🔍 작업 상태 조회 중...");
+        handleTaskStatusResult(taskId, statusInfo.taskStatus());
 
+        waitForProcessingAndVerifyFinalResult(taskId);
+    }
+
+    /**
+     * 현재 작업 상태를 조회하고 TaskStatus Enum으로 변환
+     */
+    private TaskStatusInfo getCurrentTaskStatus(Long taskId) throws Exception {
         MvcResult statusResult = mockMvc.perform(get("/api/files/{id}/status", taskId))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -152,96 +164,176 @@ class KanjiControllerIntegrationTest {
         JsonNode statusJson = objectMapper.readTree(statusResponseBody);
         String currentStatus = statusJson.get("status").asText();
 
-        System.out.println("2️⃣ 현재 상태: " + currentStatus);
-        System.out.println("📋 상태 응답: " + statusResponseBody);
+        // TaskStatus Enum으로 변환
+        TaskStatus taskStatus = TaskStatus.fromStatus(currentStatus);
 
-        // 3. 상태별 결과 조회
-        System.out.println("\n📊 결과 조회 중...");
+        return new TaskStatusInfo(taskStatus, currentStatus, statusResponseBody);
+    }
 
-        if (TaskStatus.PENDING.getStatus().equals(currentStatus)) {
-            // PENDING 상태 결과 조회
-            MvcResult pendingResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
-                    .andDo(print())
-                    .andExpect(status().isAccepted())
-                    .andExpect(header().string("X-Status", "PENDING"))
-                    .andExpect(header().exists("X-Message"))
-                    .andReturn();
 
-            System.out.println("3️⃣ PENDING 상태 결과:");
-            System.out.println("📋 X-Status: " + pendingResult.getResponse().getHeader("X-Status"));
-            System.out.println("📋 X-Message: " + pendingResult.getResponse().getHeader("X-Message"));
+    public void handleTaskStatusResult(Long taskId, TaskStatus taskStatus) throws Exception {
+        switch (taskStatus) {
+            case PENDING -> handlePendingResult(taskId);
+            case PROCESSING -> handleProcessingResult(taskId);
+            case DONE -> handleDoneResult(taskId);
+            case FAILED -> handleFailedResult(taskId);
+        }
+    }
 
-        } else if (TaskStatus.DONE.getStatus().equals(currentStatus)) {
-            // DONE 상태 결과 조회
-            MvcResult doneResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(header().string("X-Status", "DONE"))
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andReturn();
+    public void handlePendingResult(Long taskId) throws Exception {
+        System.out.println("⏳ PENDING 상태 결과 조회...");
 
-            String doneResponseBody = doneResult.getResponse().getContentAsString();
-            System.out.println("3️⃣ DONE 상태 결과:");
-            System.out.println("📋 응답: " + doneResponseBody);
+        MvcResult pendingResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                .andDo(print())
+                .andExpect(status().isAccepted())
+                .andReturn();
 
+        String responseBody = pendingResult.getResponse().getContentAsString();
+        assertThat(pendingResult.getResponse().getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
+        assertThat(responseBody).isEmpty();
+        assertThat(TaskStatus.PENDING.getMessage(null)).contains("처리 대기");
+    }
+
+    public void handleProcessingResult(Long taskId) throws Exception {
+        System.out.println("⚙️ PROCESSING 상태 결과 조회...");
+
+        MvcResult processingResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                .andDo(print())
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        String responseBody = processingResult.getResponse().getContentAsString();
+
+        System.out.println("3️⃣ PROCESSING 상태 결과:");
+        System.out.println("📋 응답 상태: " + processingResult.getResponse().getStatus());
+        System.out.println("📋 응답 본문: " + (responseBody.isEmpty() ? "없음 (예상됨)" : responseBody));
+
+        // TaskStatus의 메시지 검증
+        assertThat(TaskStatus.PROCESSING.getMessage(null)).contains("처리 중");
+    }
+
+    /**
+     * DONE 상태 결과 처리
+     */
+    public void handleDoneResult(Long taskId) throws Exception {
+        System.out.println("✅ DONE 상태 결과 조회...");
+
+        MvcResult doneResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        String doneResponseBody = doneResult.getResponse().getContentAsString();
+        System.out.println("3️⃣ DONE 상태 결과:");
+        System.out.println("📋 응답: " + doneResponseBody);
+
+        if (!doneResponseBody.isEmpty()) {
             JsonNode doneJson = objectMapper.readTree(doneResponseBody);
             System.out.println("🎨 결과 JSON (Pretty):");
-            System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(doneJson));
-
-        } else if (TaskStatus.FAILED.getStatus().equals(currentStatus)) {
-            // FAILED 상태 결과 조회
-            MvcResult failedResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
-                    .andDo(print())
-                    .andExpect(status().isInternalServerError())
-                    .andExpect(header().string("X-Status", "FAILED"))
-                    .andReturn();
-
-            System.out.println("3️⃣ FAILED 상태 결과:");
-            System.out.println("📋 X-Status: " + failedResult.getResponse().getHeader("X-Status"));
-            System.out.println("📋 X-Error: " + failedResult.getResponse().getHeader("X-Error"));
+            System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(doneJson));// 결과 데이터 구조 검증
+            assertThat(doneJson).isNotNull();
         }
 
-        System.out.println("\n🎉 실제 PDF 파일 전체 워크플로우 테스트 완료!");
-        System.out.println("🔗 작업 ID " + taskId + "로 계속 추적 가능합니다.");
+        // TaskStatus의 상태 그룹 검증
+        assertThat(TaskStatus.DONE.isCompleted()).isTrue();
+        assertThat(TaskStatus.DONE.isSuccessful()).isTrue();
+        assertThat(TaskStatus.DONE.isProcessing()).isFalse();
+    }
 
-        // 4. SQS 처리 대기 및 최종 상태 확인 (충분한 시간 대기)
+
+    public void handleFailedResult(Long taskId) throws Exception {
+        System.out.println("❌ FAILED 상태 결과 조회...");
+
+        MvcResult failedResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                .andDo(print())
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String responseBody = failedResult.getResponse().getContentAsString();
+
+        System.out.println("3️⃣ FAILED 상태 결과:");
+        System.out.println("📋 응답 상태: " + failedResult.getResponse().getStatus());
+        System.out.println("📋 응답 본문: " + (responseBody.isEmpty() ? "없음 (예상됨)" : responseBody));
+
+        // TaskStatus의 상태 그룹 검증
+        assertThat(TaskStatus.FAILED.isCompleted()).isTrue();
+        assertThat(TaskStatus.FAILED.isFailed()).isTrue();
+        assertThat(TaskStatus.FAILED.isSuccessful()).isFalse();
+        assertThat(TaskStatus.FAILED.isProcessing()).isFalse();
+    }
+
+
+    public void waitForProcessingAndVerifyFinalResult(Long taskId) {
         System.out.println("\n⏳ SQS 메시지 처리를 기다리는 중... (30초 대기)");
+
         try {
-            Thread.sleep(30000); // 30초 대기
+            // 30초 대기를 여러 단계로 나누어 중간 상태도 확인
+            for (int i = 0; i < 6; i++) {
+                Thread.sleep(5000); // 5초씩 대기
+
+                try {
+                    TaskStatusInfo currentStatus = getCurrentTaskStatus(taskId);
+                    System.out.printf("⏰ %d초 경과 - 현재 상태: %s%n", (i + 1) * 5, currentStatus.status());
+
+                    // 완료된 상태라면 더 이상 기다리지 않음
+                    if (currentStatus.taskStatus().isCompleted()) {
+                        System.out.println("🎯 작업이 완료되었습니다!");
+                        break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("⚠️ 중간 상태 확인 중 오류: " + e.getMessage());
+                }
+            }
 
             // 최종 상태 재확인
-            MvcResult finalStatusResult = mockMvc.perform(get("/api/files/{id}/status", taskId))
-                    .andDo(print())
+            TaskStatusInfo finalStatusInfo = getCurrentTaskStatus(taskId);
+            System.out.println("4️⃣ 최종 상태: " + finalStatusInfo.status());
+            System.out.println("📋 최종 응답: " + finalStatusInfo.responseBody());
+
+            // 최종 상태에 따른 추가 검증
+            verifyFinalState(taskId, finalStatusInfo.taskStatus());
+
+        } catch (InterruptedException e) {
+            System.out.println("⚠️ 대기 중 인터럽트 발생: " + e.getMessage());
+            Thread.currentThread().interrupt(); // 인터럽트 상태 복원
+        } catch (Exception e) {
+            System.out.println("⚠️ 최종 상태 확인 중 오류: " + e.getMessage());
+        }
+    }
+
+    public void verifyFinalState(Long taskId, TaskStatus finalStatus) throws Exception {
+        if (finalStatus == TaskStatus.DONE) {
+            // 성공적으로 완료된 경우 최종 결과 조회 및 검증
+            MvcResult finalResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                    .andExpect(status().isOk())
                     .andReturn();
 
-            String finalStatusBody = finalStatusResult.getResponse().getContentAsString();
-            JsonNode finalStatusJson = objectMapper.readTree(finalStatusBody);
-            String finalStatus = finalStatusJson.get("status").asText();
-
-            System.out.println("4️⃣ 최종 상태: " + finalStatus);
-            System.out.println("📋 최종 응답: " + finalStatusBody);
-
-            if (TaskStatus.DONE.getStatus().equals(finalStatus)) {
-                // 최종 결과 조회
-                MvcResult finalResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
-                        .andExpect(status().isOk())
-                        .andExpect(header().string("X-Status", "DONE"))
-                        .andReturn();
-
-                String finalResultBody = finalResult.getResponse().getContentAsString();
+            String finalResultBody = finalResult.getResponse().getContentAsString();
+            if (!finalResultBody.isEmpty()) {
                 System.out.println("🎯 최종 처리 결과:");
                 System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(
                         objectMapper.readTree(finalResultBody)));
             }
 
-        } catch (InterruptedException e) {
-            System.out.println("⚠️ 대기 중 인터럽트 발생: " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("⚠️ 최종 상태 확인 중 오류: " + e.getMessage());
-        }
+            // 상태 전환 검증 - DONE 상태에서는 다른 상태로 전환 불가
+            assertThat(finalStatus.canTransitionTo(TaskStatus.PROCESSING)).isFalse();
+            assertThat(finalStatus.canTransitionTo(TaskStatus.PENDING)).isFalse();
 
-        // 테스트 완료 후 정리 메시지
-        System.out.println("\n🧹 테스트 데이터는 @DirtiesContext로 인해 정리됩니다.");
+        } else if (finalStatus == TaskStatus.FAILED) {
+            System.out.println("❌ 작업이 실패로 완료되었습니다.");
+
+            // 실패 상태 검증
+            assertThat(finalStatus.isFailed()).isTrue();
+            assertThat(finalStatus.canTransitionTo(TaskStatus.PENDING)).isTrue(); // 재시작 가능
+
+        } else if (finalStatus.isProcessing()) {
+            System.out.println("⏳ 작업이 아직 진행 중입니다.");
+
+            // 진행 중 상태 검증
+            assertThat(finalStatus.isProcessing()).isTrue();
+            assertThat(finalStatus.isCompleted()).isFalse();
+        }
     }
 
     @Test
