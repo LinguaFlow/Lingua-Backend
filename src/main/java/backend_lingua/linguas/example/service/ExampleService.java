@@ -42,20 +42,12 @@ public class ExampleService {
         }
     }
 
-
-
-    /**
-     * 공통 HTTP 헤더 세팅 (필요시 수정)
-     */
     private HttpHeaders defaultHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
-
-    /**
-     * API 응답을 검증하고, 바디를 반환하거나 예외를 던집니다.
-     */
+    
     private ExampleSentencesResponse handleResponse(ResponseEntity<ExampleSentencesResponse> response) {
         HttpStatusCode status = response.getStatusCode();
 
