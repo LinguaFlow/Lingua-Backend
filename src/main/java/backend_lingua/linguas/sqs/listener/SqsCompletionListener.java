@@ -55,6 +55,6 @@ public class SqsCompletionListener {
     }
 
     private void processCompletedTask(String bookName) {
-        kanjiService.processKanjiData(bookName, flaskDataService.fetchAll().get("details"));
+        kanjiService.processKanjiData(bookName, flaskDataService.fetchByBookName(bookName).get("details"));
     }
 }

@@ -102,9 +102,9 @@ public class KanjiController {
         }
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<Map<String, Object>> test() {
-        Map<String, Object> stringObjectMap = dataService.fetchAll();
-        return ResponseEntity.ok().body(stringObjectMap);
-    }
+//    @GetMapping("/test")
+//    public ResponseEntity<Map<String, Object>> test() {
+//        Map<String, Object> stringObjectMap = dataService.fetchAll();
+//        return ResponseEntity.ok().body(stringObjectMap);
+//    }
 }
