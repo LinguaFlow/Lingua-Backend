@@ -39,50 +39,29 @@ jobs:
       - name: Execute Deployment Commands on Backend
         run: |
           ssh backend "
-            # Pull latest image
-            docker pull hwangjungseok/lingua-backend:latest
-          
-            # Stop and remove existing container
-            docker stop lingua-backend || true
-            docker rm lingua-backend || true
-          
-            # Clean up old images (keep only latest)
-            IMAGE_ID=\$(docker images -q hwangjungseok/lingua-backend:latest | head -n 1)
-            docker image prune -f
-            if [ ! -z \"\$IMAGE_ID\" ]; then
-              docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi || true
-            fi
-          
-            # Deploy new container with Pinpoint monitoring
-            docker run -d -p 8080:8080 \\
-              --env-file /home/ubuntu/.env \\
-              -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \\
-              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \\
-              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \\
-              -e S3_ENDPOINT='${{ secrets.S3_ENDPOINT }}' \\
-              -e AWS_REGION='${{ secrets.AWS_REGION }}' \\
-              -e SQS_QUEUE_URL='${{ secrets.SQS_QUEUE_URL }}' \\
-              -e SQS_QUEUE_NAME='${{ secrets.SQS_QUEUE_NAME }}' \\
-              -e KANJI_API_BASE_URL='${{ secrets.KANJI_API_BASE_URL }}' \\
-              -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \\
-              -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \\
-              -e NODE_ENV='EC2' \\
-              -e JAVA_TOOL_OPTIONS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }} -Dpinpoint.profiler.transport.grpc.collector.ip=${{ secrets.PINPOINT_COLLECTOR_IP }}' \\
-              -v \$(pwd)/pinpoint-agent-2.5.4:/pinpoint-agent \\
-              --restart always \\
-              --name lingua-backend \\
-              hwangjungseok/lingua-backend:latest
-          
-            # Verify deployment
-            echo 'Waiting for container to start...'
-            sleep 10
-            docker logs lingua-backend --tail 20
-          
-            # Check if container is running
-            if docker ps | grep -q lingua-backend; then
-              echo 'Backend deployment successful!'
-            else
-              echo 'Backend deployment failed!'
-              exit 1
-            fi
-          "
+          docker pull hwangjungseok/lingua-backend:latest;
+          docker stop lingua-backend || true;
+          docker rm lingua-backend || true;
+          IMAGE_ID=\$(docker images -q hwangjungseok/lingua-backend:latest | head -n 1);
+          docker image prune -f;
+          if [ ! -z \"\$IMAGE_ID\" ]; then
+            docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi;
+          fi;
+          docker run -d -p 8080:8080 \
+            --env-file /home/ubuntu/.env \
+            -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
+            -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+            -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+            -e S3_ENDPOINT='${{ secrets.S3_ENDPOINT }}' \
+            -e AWS_REGION='${{ secrets.AWS_REGION }}' \
+            -e SQS_QUEUE_URL='${{ secrets.SQS_QUEUE_URL }}' \
+            -e SQS_QUEUE_NAME='${{ secrets.SQS_QUEUE_NAME }}' \
+            -e KANJI_API_BASE_URL='${{ secrets.KANJI_API_BASE_URL }}' \
+            -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
+            -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
+            -e NODE_ENV='EC2' \
+            -e JAVA_TOOL_OPTIONS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }} -Dpinpoint.profiler.transport.grpc.collector.ip=${{ secrets.PINPOINT_COLLECTOR_IP }}' \\
+            -v \$(pwd)/pinpoint-agent-2.5.4:/pinpoint-agent \\
+            --restart always \
+            --name lingua-backend \
+            hwangjungseok/lingua-backend:latest"
