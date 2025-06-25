@@ -63,7 +63,7 @@ jobs:
             -e PINPOINT_AGENT_ID='${{ secrets.PINPOINT_AGENT_ID }}' \
             -e PINPOINT_APPLICATION_NAME='${{ secrets.PINPOINT_APPLICATION_NAME }}' \
             -e PINPOINT_COLLECTOR_IP='${{ secrets.PINPOINT_COLLECTOR_IP }}' \
-            -e JAVA_TOOL_OPTIONS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }} -Dpinpoint.profiler.transport.grpc.collector.ip=${{ secrets.PINPOINT_COLLECTOR_IP }} -Dpinpoint.profiler.sampling.counting.sampling-rate=1' \
+            -e JAVA_TOOL_OPTIONS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }} -Dpinpoint.profiler.transport.grpc.collector.ip=${{ secrets.PINPOINT_COLLECTOR_IP }} -Dpinpoint.profiler.transport.grpc.agent.collector.port=9991 -Dpinpoint.profiler.transport.grpc.stat.collector.port=9992 -Dpinpoint.profiler.transport.grpc.span.collector.port=9993 -Dpinpoint.profiler.transport.grpc.meta.collector.port=9994 -Dpinpoint.profiler.sampling.counting.sampling-rate=1 -Dpinpoint.profiler.uri.stat.enable=true -Dpinpoint.profiler.uri.stat.spring.webmvc.enable=true -Dpinpoint.profiler.uri.stat.collect.http.method=true -Dpinpoint.profiler.error.enable=true -Dpinpoint.profiler.exception.trace=true' \
             -v \$(pwd)/pinpoint-agent-2.5.4:/pinpoint-agent \
             --restart always \
             --name lingua-backend \
