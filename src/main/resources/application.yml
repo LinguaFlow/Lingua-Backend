@@ -17,17 +17,12 @@ spring:
       ddl-auto: create
     properties:
       hibernate:
-
         dialect: org.hibernate.dialect.MySQL8Dialect
-
         default_batch_fetch_size: 100
-
         jdbc:
           batch_size: 50
-
         order_inserts: true
         order_updates: true
-
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
@@ -37,6 +32,19 @@ management:
     web:
       exposure:
         include: prometheus, health, info
+
+# Pinpoint 관련 설정 추가
+pinpoint:
+  web:
+    applicationMap:
+      refreshInterval: 30000  # 30초로 폴링 간격 설정 (밀리초)
+      cacheEnabled: true      # 캐싱 활성화
+      cacheTtl: 60000        # 캐시 유지 시간 (60초)
+    ui:
+      autoRefresh: false     # 자동 새로고침 비활성화 (수동 제어)
+    hbase:
+      connectionTimeout: 3000  # HBase 연결 타임아웃 (3초)
+      readTimeout: 5000       # HBase 읽기 타임아웃 (5초)
 
 kanji:
   api:
