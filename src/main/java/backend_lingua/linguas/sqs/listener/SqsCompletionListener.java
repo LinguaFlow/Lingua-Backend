@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,8 +36,10 @@ public class SqsCompletionListener {
             if ("complete".equals(status) && !bookName.isEmpty()) {
                 log.info("✅ 작업 완료 확인 - 책: {}", bookName);
 
-                // 🎯 핵심: Flask에서 데이터 가져오기
-                processCompletedTask(bookName);
+                String normalizedS3Key = normalizeToS3Key(bookName);
+                log.info("🔑 S3 키 정규화: '{}' → '{}'", bookName, normalizedS3Key);
+
+                processCompletedTask(normalizedS3Key);
             } else {
                 log.warn("⚠️ 조건 불일치 - status: '{}' (expected: 'complete'), bookName isEmpty: {}", status, bookName.isEmpty());
             }
@@ -54,7 +55,25 @@ public class SqsCompletionListener {
         }
     }
 
-    private void processCompletedTask(String bookName) {
-        kanjiService.processKanjiData(bookName, flaskDataService.fetchAll().get("details"));
+    private void processCompletedTask(String s3Key) {
+        kanjiService.processKanjiData(s3Key, flaskDataService.fetchAll().get("details"));
+    }
+
+    private String normalizeToS3Key(String bookName) {
+        String s3Key = bookName;
+
+        if (s3Key.startsWith("s3PDF/")) {
+            s3Key = s3Key.substring(6);
+        }
+
+        if (s3Key.startsWith("./s3PDF/")) {
+            s3Key = s3Key.substring(8);
+        }
+
+        if (s3Key.contains("/")) {
+            s3Key = s3Key.substring(s3Key.lastIndexOf("/") + 1);
+        }
+
+        return s3Key;
     }
 }
