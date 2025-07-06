@@ -43,32 +43,30 @@ public class KanjiService {
     }
 
     @Transactional
-    public void processKanjiData(String bookName, Object kanjiDetails) {
-        String s3Key = bookName;
+    public void processKanjiData(String s3Key, Object kanjiDetails) {
 
-        if (s3Key.startsWith("s3PDF/")) {
-            s3Key = s3Key.substring(6); // "s3PDF/" 제거
+        log.info("s3eky={}" , s3Key);
+        var kanji = repository.findByS3Key(s3Key).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
+
+        if (!kanji.getStatus().canBeProcessed()) {
+            log.warn("⚠️ 처리 불가능한 상태 - 현재 상태: {}, Task ID: {}, S3 Key: {}",
+                    kanji.getStatus().getStatus(), kanji.getId(), s3Key);
+            throw new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST);
         }
 
-        if (s3Key.startsWith("./s3PDF/")) {
-            s3Key = s3Key.substring(8); // "./s3PDF/" 제거
+        try {
+            Map<String, Object> bookData = Collections.singletonMap("details", kanjiDetails);
+
+            kanji.completeProcessing(bookData);
+
+            log.info("✅ Kanji 작업 처리 완료 - Task ID: {}", kanji.getId());
+        } catch (Exception e) {
+            log.error("❌ Kanji 작업 처리 실패 - ID: {}, 파일명: '{}', 오류: {}", kanji.getId(), kanji.getBookName(), e.getMessage());
+            throw e;
         }
-
-        if (s3Key.contains("/")) {
-            s3Key = s3Key.substring(s3Key.lastIndexOf("/") + 1);
-        }
-
-        var kanji = repository.findByS3Key(s3Key).orElseThrow(()
-                -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
-
-        Map<String, Object> bookData = Collections.singletonMap("details", kanjiDetails);
-
-        kanji.completeProcessing(bookData);
-
-        repository.save(kanji);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Kanji get(Long id) {
         return repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
     }
