@@ -1,5 +1,5 @@
 ---
-name: Feature
+name: "✨ Feature"
 about: 새로운 기능이나 개선 사항에 대한 요청
 title: ''
 labels: ''
