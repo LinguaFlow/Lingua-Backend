@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -51,6 +52,7 @@ class KanjiControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
+    @DisplayName("PDF 파일이 저장된경로")
     private MockMultipartFile createRealPdfFile() {
         try {
             String filePath = "/Users/hwangjungseog/Downloads/단어.pdf";
@@ -102,7 +104,7 @@ class KanjiControllerTest {
 
         } catch (Exception e) {
             System.out.println("⚠️ Flask API 연결 실패 (서버가 실행 중이지 않을 수 있습니다): " + e.getMessage());
-            org.junit.jupiter.api.Assumptions.assumeTrue(false, "Flask 서버 연결 불가");
+            assumeTrue(false, "Flask 서버 연결 불가");
         }
     }
 
@@ -241,7 +243,7 @@ class KanjiControllerTest {
         System.out.println("\n⏳ SQS 메시지 처리를 기다리는 중... (30초 대기)");
 
         try {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 100; i++) {
                 Thread.sleep(5000);
 
                 try {

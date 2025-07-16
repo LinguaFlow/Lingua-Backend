@@ -1,10 +1,10 @@
 package backend_lingua.linguas.kanji.api;
 
+import backend_lingua.linguas.kanji.dto.response.KanjiStatusResponse;
 import backend_lingua.linguas.kanji.dto.response.KanjiVocabularyListResponse;
-import backend_lingua.linguas.kanji.entity.Kanji;
-import backend_lingua.linguas.kanji.entity.TaskStatus;
 import backend_lingua.linguas.kanji.service.FlaskService;
 import backend_lingua.linguas.kanji.service.KanjiService;
+import backend_lingua.linguas.kanji.service.KanjiStatusService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +20,7 @@ import java.util.Map;
 public class KanjiController {
 
     private final KanjiService kanjiService;
+    private final KanjiStatusService kanjiStatusService;
     private final FlaskService dataService;
 
     @PostMapping("/upload")
@@ -34,25 +35,15 @@ public class KanjiController {
     }
 
     @GetMapping("/{id}/status")
-    public ResponseEntity<Map<String, String>> status(@PathVariable Long id) {
-        Kanji kanji = kanjiService.get(id);
+    public ResponseEntity<KanjiStatusResponse> status(@PathVariable Long id) {
+        KanjiStatusResponse statusResponse = kanjiStatusService.getTaskStatus(id);
 
-        TaskStatus status = kanji.getStatus();
-
-        String message = status.getMessage(kanji);
-
-        return ResponseEntity.ok(Map.of(
-                "status", status.getStatus(),
-                "code", status.getCode(),
-                "message", message
-        ));
+        return ResponseEntity.ok(statusResponse);
     }
 
     @GetMapping("/{id}/result")
     public ResponseEntity<KanjiVocabularyListResponse> result(@PathVariable Long id) {
-        Kanji kanji = kanjiService.get(id);
-
-        return kanji.getStatus().buildResultResponse(kanji);
+        return kanjiStatusService.getTaskResult(id);
     }
 
     @GetMapping("/test")
