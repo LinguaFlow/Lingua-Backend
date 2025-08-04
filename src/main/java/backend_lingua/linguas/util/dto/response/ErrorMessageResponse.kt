@@ -11,8 +11,8 @@ data class ErrorMessageResponse(
     companion object {
         fun of(message: String, httpRequest: HttpServletRequest, exception: Exception): ErrorMessageResponse {
             return ErrorMessageResponse(
-                httpMethod = httpRequest.method.toString(),
-                path = httpRequest.method,
+                httpMethod = httpRequest.method,
+                path = httpRequest.requestURI,
                 message = message,
                 exception = exception
             )

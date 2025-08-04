@@ -8,15 +8,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 
 @RestControllerAdvice
-class ExceptionHandlerImpl() {
+class ExceptionHandlerImpl {
 
     @ExceptionHandler(BusinessException::class)
-    fun handlerBusinessException(e: BusinessException, request: HttpServletRequest,exception: Exception): ResponseEntity<ErrorMessageResponse> {
+    fun handleBusinessException(
+        e: BusinessException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ErrorMessageResponse> {
         return ResponseEntity
             .status(e.httpStatus)
-            .body(ErrorMessageResponse.of(
-                e.message ,
-                request ,
-                exception))
+            .body(
+                ErrorMessageResponse.of(
+                    e.message,
+                    request,
+                    e,
+                )
+            )
     }
 }
