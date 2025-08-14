@@ -19,11 +19,11 @@ public class KanjiVocabularyListResponse {
     private String bookName;
 
     @JsonProperty("file_name")
-    private List<KanjiVocabularyListDto> kanjiDetails;
+    private List<KanjiVocabularyList> kanjiDetails;
 
     public static KanjiVocabularyListResponse from(Kanji kanji) {
         String bookName = kanji.getBookName();
-        List<KanjiVocabularyListDto> detailResponses = new ArrayList<>();
+        List<KanjiVocabularyList> detailResponses = new ArrayList<>();
         Map<String, Object> bookData = kanji.getBook();
         if (bookData != null && !bookData.isEmpty()) {
             String fileNameKey = bookData.keySet().iterator().next();
@@ -43,7 +43,7 @@ public class KanjiVocabularyListResponse {
                     int page = ((Number) detailMap.getOrDefault("page", 0)).intValue();
 
                     detailResponses.add(
-                            KanjiVocabularyListDto.builder()
+                            KanjiVocabularyList.builder()
                                     .vocabularyBookOrder(worldOrder)
                                     .kanji(kanjis)
                                     .furigana(furigana)
