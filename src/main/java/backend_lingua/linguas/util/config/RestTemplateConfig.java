@@ -1,4 +1,4 @@
-package backend_lingua.linguas.util;
+package backend_lingua.linguas.util.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
