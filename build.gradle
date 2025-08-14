@@ -19,44 +19,72 @@ configurations {
 repositories { mavenCentral() }
 
 dependencies {
-	/* ───────── Spring Boot ───────── */
-	implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.0'
+    /* ───────── Spring Boot ───────── */
+    implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
-	/* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
-	implementation 'org.hibernate.orm:hibernate-spatial'
-	/* ───────── Prometheus ───────── */
-	implementation 'io.micrometer:micrometer-registry-prometheus:1.14.5'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.0'
 
-	/* ───────── AWS SDK v2 ───────── */
-	implementation platform('software.amazon.awssdk:bom:2.25.14')
-	implementation 'software.amazon.awssdk:s3'
-	implementation 'software.amazon.awssdk:sqs'
+    /* ───────── Spring Validation ───────── */
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-	/* ───────── Spring-Cloud-AWS (SQS) ───────── */
-	implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.0.4'
+    /* ───────── JWT 라이브러리───────── */
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-	/* ───────── 부가 라이브러리 ───────── */
-	// Hibernate 6.4 호환 버전으로 업데이트
-	implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-	/* ───────── DB Driver ───────── */
-	// Spring Boot 3.x 호환 MySQL 커넥터로 변경
-	runtimeOnly 'com.mysql:mysql-connector-j'
+    /* ───────── Jackson (JSON 처리) ───────── */
+    implementation 'commons-codec:commons-codec:1.16.0'
 
-	/* ───────── Lombok ───────── */
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testCompileOnly 'org.projectlombok:lombok'
-	testAnnotationProcessor 'org.projectlombok:lombok'
+    /* ───────── Apache Commons Codec (Base64 인코딩용) ───────── */
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-	/* ───────── Test ───────── */
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    /* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
+    implementation 'org.hibernate.orm:hibernate-spatial'
+
+    /* ───────── Prometheus ───────── */
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.14.5'
+
+    /* ───────── redis ───────── */
+//    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    /* ───────── AWS SDK v2 ───────── */
+    implementation platform('software.amazon.awssdk:bom:2.25.14')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:sqs'
+
+    /* ───────── Spring-Cloud-AWS (SQS) ───────── */
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.0.4'
+
+    /* ───────── 부가 라이브러리 ───────── */
+    // Hibernate 6.4 호환 버전으로 업데이트
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
+
+    /* ───────── DB Driver ───────── */
+    // Spring Boot 3.x 호환 MySQL 커넥터로 변경
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    /* ───────── Lombok ───────── */
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    /* ───────── Test ───────── */
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Enable annotation processing for Lombok
+tasks.withType(JavaCompile).configureEach {
+    options.annotationProcessorPath = configurations.annotationProcessor
 }

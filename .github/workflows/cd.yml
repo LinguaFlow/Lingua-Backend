@@ -60,6 +60,16 @@ jobs:
             -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
             -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
             -e NODE_ENV='EC2' \
+            -e GOOGLE_CLIENT_ID='${{ secrets.GOOGLE_CLIENT_ID }}' \
+            -e GOOGLE_CLIENT_SECRET='${{ secrets.GOOGLE_CLIENT_SECRET }}' \
+            -e NAVER_CLIENT_ID='${{ secrets.NAVER_CLIENT_ID }}' \
+            -e NAVER_CLIENT_SECRET='${{ secrets.NAVER_CLIENT_SECRET }}' \
+            -e KAKAO_CLIENT_ID='${{ secrets.KAKAO_CLIENT_ID }}' \
+            -e KAKAO_CLIENT_SECRET='${{ secrets.KAKAO_CLIENT_SECRET }}' \
+            -e ACCESS_TOKEN='${{ secrets.ACCESS_TOKEN }}' \
+            -e REFRESH_TOKEN='${{ secrets.REFRESH_TOKEN }}' \
+            -e EXPIRATION_TIME='${{ secrets.EXPIRATION_TIME }}' \
+            -e EXPIRATION_DATE='${{ secrets.EXPIRATION_DATE }}' \
             -e PINPOINT_AGENT_ID='${{ secrets.PINPOINT_AGENT_ID }}' \
             -e PINPOINT_APPLICATION_NAME='${{ secrets.PINPOINT_APPLICATION_NAME }}' \
             -e PINPOINT_COLLECTOR_IP='${{ secrets.PINPOINT_COLLECTOR_IP }}' \
