@@ -1,6 +1,9 @@
 package backend_lingua.linguas.member.entity;
 
 import backend_lingua.linguas.member.enumerated.MemberRole;
+import backend_lingua.linguas.oauth.enumerated.MemberRoleConverter;
+import backend_lingua.linguas.oauth.enumerated.ProviderType;
+import backend_lingua.linguas.oauth.enumerated.ProviderTypeConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,22 +25,25 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false , name = "email")
     private String email;
 
+    @Column(name = "name")
     private String name;
 
+    @Column(name = "picture")
     private String picture;
 
-    @Column(nullable = false)
-    private String provider;
+    @Column(name = "provider")
+    @Convert(converter = ProviderTypeConverter.class)
+    private ProviderType provider;
 
     @Column(name = "provider_id")
     private String providerId;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private MemberRole role = MemberRole.USER;
+    @Convert(converter = MemberRoleConverter.class)
+    private MemberRole role;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -47,8 +53,4 @@ public class Member {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public void updateInfo(String name, String picture) {
-        if (name != null) this.name = name;
-        if (picture != null) this.picture = picture;
-    }
 }
