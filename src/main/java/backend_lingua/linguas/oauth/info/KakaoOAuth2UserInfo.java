@@ -1,5 +1,7 @@
 package backend_lingua.linguas.oauth.info;
 
+import backend_lingua.linguas.oauth.enumerated.ProviderType;
+
 import java.util.Map;
 
 public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
@@ -20,7 +22,7 @@ public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
 
     @Override
     public String getName() {
-        return profile != null ? (String) profile.get("nickname") : null;
+        return (String) profile.get("nickname");
     }
 
     @Override
@@ -32,4 +34,11 @@ public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
     public String getImageUrl() {
         return profile != null ? (String) profile.get("profile_image_url") : null;
     }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return super.getAttributes();
+    }
+
+
 }
