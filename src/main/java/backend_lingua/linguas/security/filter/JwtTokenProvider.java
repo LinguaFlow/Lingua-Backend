@@ -1,12 +1,12 @@
 package backend_lingua.linguas.security.filter;
 
+import backend_lingua.linguas.security.dto.response.TokenInfo;
 import backend_lingua.linguas.security.principal.UserPrincipal;
 import backend_lingua.linguas.security.token.enumerated.TokenType;
 import backend_lingua.linguas.security.token.service.TokenService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +19,10 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.stream.Collectors;
 
+import backend_lingua.linguas.security.principal.UserDetailsServiceImpl;
+
+import io.jsonwebtoken.*;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,119 +34,120 @@ public class JwtTokenProvider {
     @Value("${jwt.refresh-token-secret}")
     private String refreshTokenSecret;
 
-    @Getter
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
 
-    @Getter
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
+
+    private final UserDetailsServiceImpl userDetailsService;
 
     private final TokenService tokenService;
 
     /**
-     * Access Token 생성
+     * 액세스 토큰 & 리프레시 토큰 생성
      */
-    public String createAccessToken(Authentication authentication) {
-        return createToken(authentication, accessTokenExpiration, accessTokenSecret, TokenType.ACCESS_TOKEN);
+    public TokenInfo generateToken(Authentication authentication) {
+        String accessToken = createAccessToken(authentication);
+        String refreshToken = createRefreshToken(authentication);
+        Date accessTokenExpiryDate = createExpiryDate(accessTokenExpiration);
+
+        return TokenInfo.builder()
+                .accessToken(accessToken)
+                .accessTokenExpiresIn(accessTokenExpiryDate.getTime())
+                .refreshToken(refreshToken)
+                .refreshTokenExpiresIn(refreshTokenExpiration)
+                .tokenType("Bearer")
+                .build();
     }
 
     /**
-     * Refresh Token 생성 및 저장
+     * 액세스 토큰 생성
+     */
+    public String createAccessToken(Authentication authentication) {
+        return createToken(authentication, accessTokenExpiration, accessTokenSecret);
+    }
+
+    /**
+     * 리프레시 토큰 생성 및 저장
      */
     public String createRefreshToken(Authentication authentication) {
-        String token = createToken(authentication, refreshTokenExpiration, refreshTokenSecret, TokenType.REFRESH_TOKEN);
+        String token = createToken(authentication, refreshTokenExpiration, refreshTokenSecret);
         Date expiryDate = createExpiryDate(refreshTokenExpiration);
 
-        // DB에 Refresh Token 저장
+        // DB에 리프레시 토큰 저장
         tokenService.createRefreshToken(token, expiryDate, authentication);
 
         return token;
     }
 
     /**
-     * 토큰 생성 공통 메서드
+     * JWT 토큰 생성 (공통 메서드)
      */
-    private String createToken(Authentication authentication, long expirationTime, String secret, TokenType tokenType) {
-        String authorities = authentication.getAuthorities().stream()
+    private String createToken(Authentication authentication, long expirationTime, String secretKey) {
+        String authorities = authentication.getAuthorities()
+                .stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        String email = authentication.getName();
-
-        // Claims 빌더 생성
-        JwtBuilder builder = Jwts.builder()
-                .setSubject(email)
+        return Jwts.builder()
+                .setSubject(authentication.getName())  // email
                 .claim("auth", authorities)
-                .claim("type", tokenType.getValue());
-
-        // UserPrincipal인 경우 추가 정보 포함
-        if (authentication.getPrincipal() instanceof UserPrincipal) {
-            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-
-            // getUserId() 메서드 사용
-            if (principal.getUserId() != null) {
-                builder.claim("userId", principal.getUserId());
-            }
-
-            // getProvider() 메서드 사용
-            if (principal.getProvider() != null) {
-                builder.claim("provider", principal.getProvider());
-            }
-        }
-
-        return builder
                 .setIssuedAt(new Date())
                 .setExpiration(createExpiryDate(expirationTime))
-                .signWith(createKey(secret))
+                .signWith(createKey(secretKey))
                 .compact();
     }
 
     /**
-     * 토큰에서 인증 정보 추출
+     * 토큰에서 사용자 이메일 추출
      */
-    public Authentication getAuthentication(String token, TokenType tokenType) {
-        Claims claims = parseClaims(token, tokenType);
+    public String getUsernameFromToken(String token, TokenType tokenType) {
+        String secretKey = (tokenType == TokenType.ACCESS_TOKEN) ? accessTokenSecret : refreshTokenSecret;
 
-        String email = claims.getSubject();
-        String auth = claims.get("auth", String.class);
-        Long userId = claims.get("userId", Long.class);
-        String provider = claims.get("provider", String.class);
-
-        // JWT 토큰에서 UserPrincipal 생성
-        UserPrincipal principal;
-        if (userId != null) {
-            // User ID가 있으면 간단한 User 객체 생성 (DB 조회 없이)
-            principal = UserPrincipal.createFromTokenWithId(email, auth, userId, provider);
-        } else {
-            // User ID가 없으면 기본 생성
-            principal = UserPrincipal.createFromToken(email, auth);
-        }
-
-        return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
+        return Jwts.parserBuilder()
+                .setSigningKey(createKey(secretKey))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 
     /**
-     * Access Token 검증
+     * 토큰에서 Authentication 객체 생성
+     */
+    public Authentication getAuthentication(String token, TokenType tokenType) {
+        String username = getUsernameFromToken(token, tokenType);
+        UserPrincipal userPrincipal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
+
+        return new UsernamePasswordAuthenticationToken(
+                userPrincipal,
+                token,
+                userPrincipal.getAuthorities()
+        );
+    }
+
+    /**
+     * 액세스 토큰 검증
      */
     public boolean validateAccessToken(String token) {
         return validateToken(token, accessTokenSecret);
     }
 
     /**
-     * Refresh Token 검증
+     * 리프레시 토큰 검증
      */
     public boolean validateRefreshToken(String token) {
         return validateToken(token, refreshTokenSecret);
     }
 
     /**
-     * 토큰 검증 공통 메서드
+     * 토큰 검증 (공통 메서드)
      */
-    private boolean validateToken(String token, String secret) {
+    private boolean validateToken(String token, String secretKey) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(createKey(secret))
+                    .setSigningKey(createKey(secretKey))
                     .build()
                     .parseClaimsJws(token);
             return true;
@@ -158,54 +163,10 @@ public class JwtTokenProvider {
         return false;
     }
 
-    /**
-     * 토큰에서 클레임 추출
-     */
-    private Claims parseClaims(String token, TokenType tokenType) {
-        String secret = tokenType == TokenType.ACCESS_TOKEN ? accessTokenSecret : refreshTokenSecret;
-
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(createKey(secret))
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (ExpiredJwtException e) {
-            return e.getClaims();
-        }
-    }
-
-    /**
-     * 토큰에서 이메일 추출
-     */
-    public String getEmailFromToken(String token, TokenType tokenType) {
-        return parseClaims(token, tokenType).getSubject();
-    }
-
-    /**
-     * 토큰에서 User ID 추출
-     */
-    public Long getUserIdFromToken(String token, TokenType tokenType) {
-        return parseClaims(token, tokenType).get("userId", Long.class);
-    }
-
-    /**
-     * 토큰 만료 시간 추출
-     */
-    public Date getExpirationFromToken(String token, TokenType tokenType) {
-        return parseClaims(token, tokenType).getExpiration();
-    }
-
-    /**
-     * 만료 날짜 생성
-     */
     private Date createExpiryDate(long expirationTime) {
         return new Date(System.currentTimeMillis() + expirationTime);
     }
 
-    /**
-     * 서명 키 생성
-     */
     private SecretKey createKey(String secret) {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
