@@ -12,20 +12,6 @@ import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-    /**
-     * 토큰으로 조회 (member 함께 조회 - N+1 문제 해결)
-     */
-    @Query("SELECT rt FROM RefreshToken rt JOIN FETCH rt.member WHERE rt.token = :token")
-    Optional<RefreshToken> findByTokenWithMember(@Param("token") String token);
-
-    /**
-     * 일반 토큰 조회
-     */
-    Optional<RefreshToken> findByToken(String token);
-
-    /**
-     * 사용자 ID로 토큰 조회
-     */
     Optional<RefreshToken> findByMemberId(Long memberId);
 
     /**
