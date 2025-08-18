@@ -9,9 +9,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "refresh_tokens")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
 
     @Id

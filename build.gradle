@@ -1,87 +1,75 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.4'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'org.jetbrains.kotlin.jvm'
+    id 'java'
+    id 'org.springframework.boot' version '3.4.4'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.jvm'
 }
 
-group   = 'backend-lingua'
+group = 'backend-lingua'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain { languageVersion = JavaLanguageVersion.of(17) }
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
 configurations {
-	compileOnly { extendsFrom annotationProcessor }
+    compileOnly { extendsFrom annotationProcessor }
 }
 
 repositories { mavenCentral() }
 
 dependencies {
     /* ───────── Spring Boot ───────── */
-    implementation 'org.springframework.boot:spring-boot-starter-web'        // MVC
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // implementation 'org.springframework.boot:spring-boot-starter-webflux' // ❌ 같이 쓰지 말기
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'    // WebClient
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.5.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // ← 버전 명시 제거
 
-    /* ───────── Spring Validation ───────── */
+    /* ───────── OpenAPI / Swagger UI (springdoc) ───────── */
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+    // 만약 3.4.4와 특정 소소한 이슈가 뜨면 2.8.5로 임시 다운그레이드 시도해도 됨
+
+    /* ───────── Validation / JSON ───────── */
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'commons-codec:commons-codec:1.16.0'
 
-    /* ───────── JWT 라이브러리───────── */
+    /* ───────── JWT ───────── */
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    /* ───────── Hibernate / DB ───────── */
+    implementation 'org.hibernate.orm:hibernate-spatial' // 버전 생략(부트 BOM이 관리)
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
-    /* ───────── Jackson (JSON 처리) ───────── */
-    implementation 'commons-codec:commons-codec:1.16.0'
-
-    /* ───────── Apache Commons Codec (Base64 인코딩용) ───────── */
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-
-    /* 스프링 부트 BOM 에 이미 Hibernate 6.4.x 가 포함되므로 버전 생략 */
-    implementation 'org.hibernate.orm:hibernate-spatial'
-
-    /* ───────── Prometheus ───────── */
+    /* ───────── Actuator metrics / Prometheus ───────── */
     implementation 'io.micrometer:micrometer-registry-prometheus:1.14.5'
-
-    /* ───────── redis ───────── */
-//    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     /* ───────── AWS SDK v2 ───────── */
     implementation platform('software.amazon.awssdk:bom:2.25.14')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:sqs'
-
-    /* ───────── Spring-Cloud-AWS (SQS) ───────── */
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.0.4'
 
-    /* ───────── 부가 라이브러리 ───────── */
-    // Hibernate 6.4 호환 버전으로 업데이트
-    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
-
-    /* ───────── DB Driver ───────── */
-    // Spring Boot 3.x 호환 MySQL 커넥터로 변경
-    runtimeOnly 'com.mysql:mysql-connector-j'
-
-    /* ───────── Lombok ───────── */
+    /* ───────── Lombok / Devtools ───────── */
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     /* ───────── Test ───────── */
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    /* ───────── Kotlin 사용 시 ───────── */
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
+
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
 
 // Enable annotation processing for Lombok

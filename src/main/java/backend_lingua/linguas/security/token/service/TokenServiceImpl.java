@@ -22,13 +22,13 @@ import java.util.Date;
 public class TokenServiceImpl implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final MemberRepository userRepository;
+    private final MemberRepository memberRepository;
 
     @Override
     @Transactional
     public RefreshToken createRefreshToken(String token, Date expiryDate, Authentication authentication) {
         String email = authentication.getName();
-        Member member = userRepository.findByEmail(email)
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + email));
 
         // 기존 토큰 삭제
@@ -46,15 +46,9 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public RefreshToken findRefreshToken(String refreshToken) {
-        return refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh Token을 찾을 수 없습니다."));
-    }
-
-    @Override
     @Transactional
     public void deleteRefreshToken(String email) {
-        Member member = userRepository.findByEmail(email)
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + email));
 
         deleteRefreshTokenByUser(member);
@@ -65,11 +59,6 @@ public class TokenServiceImpl implements TokenService {
     public void deleteRefreshTokenByUser(Member member) {
         refreshTokenRepository.findByMemberId(member.getId())
                 .ifPresent(refreshTokenRepository::delete);
-    }
-
-    @Override
-    public boolean isTokenExpired(RefreshToken token) {
-        return token.getExpiryDate().isBefore(LocalDateTime.now());
     }
 
     private LocalDateTime convertToLocalDateTime(Date date) {

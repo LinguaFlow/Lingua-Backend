@@ -28,13 +28,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CORS 설정
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // CSRF 비활성화 (JWT는 쿠키를 사용하지 않음)
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 세션 비활성화 (Stateless)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -53,42 +50,23 @@ public class SecurityConfig {
                                 "/favicon.ico",
                                 "/h2-console/**"
                         ).permitAll()
-
-                        // OAuth2 & Auth endpoints
                         .requestMatchers(
-                                "/oauth2/**",
-                                "/login/oauth2/**",
-                                "/api/auth/refresh",
-                                "/api/auth/validate"
+                                "/api/v1/auth/**",
+                                "/api/v1/auth/test",
+                                "/api/v1/auth/login/**",
+                                "/api/v1/auth/login/kakao",
+                                "/api/v1/auth/login/naver",
+                                "/api/v1/auth/reissue-token",
+                                "/api/v1/mobile/auth/**",
+                                "/api//user/profile"
                         ).permitAll()
-
-                        // ⭐️ 모바일 인증 엔드포인트 추가 ⭐️
-                        .requestMatchers(
-                                "/api/mobile/auth/**",    // 이 부분 추가!
-                                "/api/mobile/auth/kakao",
-                                "/api/mobile/auth/refresh",
-                                "/api/mobile/auth/validate",
-                                "/api/mobile/auth/logout"
-                        ).permitAll()
-
-                        // Protected endpoints
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // All other requests
                         .anyRequest().authenticated()
-//                )
-//
-//                // OAuth2 로그인 설정
-//                .oauth2Login(oauth2 -> oauth2
-//                        .successHandler(oAuth2SuccessHandler)
-//                        .failureHandler(oAuth2FailureHandler)
-//                        .userInfoEndpoint(userInfo -> userInfo
-//                                .userService(customOAuth2UserService)
-//                        )
                 );
-
-        // JWT 필터 추가
+        
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -98,7 +76,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
