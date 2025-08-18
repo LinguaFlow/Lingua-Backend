@@ -83,6 +83,12 @@ jwt:
   access-token-expiration: ${EXPIRATION_TIME}
   refresh-token-expiration: ${EXPIRATION_DATE}
 
+  oauth2:
+    kakao:
+      user-info-uri: ${KAKAO_USER_INFO}
+    naver:
+      user-info-uri: ${NAVER_USER_INFO}
+
 management:
   endpoints:
     web:
