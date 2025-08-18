@@ -36,10 +36,10 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class AuthServiceImpl implements AuthService {
 
-    @Value("${oauth2.kakao.user-info-uri:https://kapi.kakao.com/v2/user/me}")
+    @Value("${oauth2.kakao.user-info-uri}")
     private String kakaoUserInfoUri;
 
-    @Value("${oauth2.naver.user-info-uri:https://openapi.naver.com/v1/nid/me}")
+    @Value("${oauth2.naver.user-info-uri}")
     private String naverUserInfoUri;
 
     private final RestTemplate restTemplate;
