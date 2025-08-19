@@ -28,13 +28,9 @@ public class TokenServiceImpl implements TokenService {
     @Transactional
     public RefreshToken createRefreshToken(String token, Date expiryDate, Authentication authentication) {
         String email = authentication.getName();
+
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + email));
-
-        // 기존 토큰 삭제
-        refreshTokenRepository.findByMemberId(member.getId())
-                .ifPresent(refreshTokenRepository::delete);
-
         // 새 토큰 생성
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)

@@ -1,4 +1,4 @@
-package backend_lingua.linguas.infrastructure.security.dto;
+package backend_lingua.linguas.infrastructure.security.token.dto;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -15,11 +15,8 @@ public class TokenInfo {
     private Long accessTokenExpiresIn;
     private String refreshToken;
     private Long refreshTokenExpiresIn;
+    private String tokenType;
 
-    @Builder.Default
-    private String tokenType = "Bearer";
-
-    // JwtResponse를 TokenInfo로 변환
     public static TokenInfo from(String accessToken, String refreshToken, Long accessTokenExp, Long refreshTokenExp) {
         return TokenInfo.builder()
                 .accessToken(accessToken)

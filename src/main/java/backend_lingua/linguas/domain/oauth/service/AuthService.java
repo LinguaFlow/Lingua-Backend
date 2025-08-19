@@ -2,7 +2,7 @@ package backend_lingua.linguas.domain.oauth.service;
 
 import backend_lingua.linguas.domain.oauth.dto.LoginResponse;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
-import backend_lingua.linguas.infrastructure.security.dto.TokenInfo;
+import backend_lingua.linguas.infrastructure.security.token.dto.TokenInfo;
 
 public interface AuthService {
 

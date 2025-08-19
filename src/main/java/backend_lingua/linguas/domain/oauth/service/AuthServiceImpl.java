@@ -9,7 +9,8 @@ import backend_lingua.linguas.domain.oauth.info.KakaoOAuth2UserInfo;
 import backend_lingua.linguas.domain.oauth.info.NaverOAuth2UserInfo;
 import backend_lingua.linguas.domain.oauth.info.OAuth2UserInfo;
 import backend_lingua.linguas.domain.member.dto.MemberInfo;
-import backend_lingua.linguas.infrastructure.security.dto.TokenInfo;
+import backend_lingua.linguas.global.dto.HttpResponse;
+import backend_lingua.linguas.infrastructure.security.token.dto.TokenInfo;
 import backend_lingua.linguas.infrastructure.security.filter.JwtTokenProvider;
 import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import backend_lingua.linguas.infrastructure.security.token.enumerated.TokenType;
@@ -134,20 +135,14 @@ public class AuthServiceImpl implements AuthService {
             );
 
             if (response.getStatusCode() != HttpStatus.OK) {
-                throw new BusinessException(
-                        HttpStatus.UNAUTHORIZED,
-                        String.format("%s 사용자 정보 조회 실패", provider.getDisplayName())
-                );
+                throw new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND);
             }
 
             return response.getBody();
 
         } catch (Exception e) {
             log.error("[{}] 사용자 정보 조회 실패: {}", provider.getProviderName(), e.getMessage());
-            throw new BusinessException(
-                    HttpStatus.UNAUTHORIZED,
-                    String.format("%s 사용자 정보 조회 실패", provider.getDisplayName())
-            );
+            throw new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND);
         }
     }
 
@@ -201,11 +196,10 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void logout(String refreshToken) {
 
-        // 2. 토큰에서 사용자 정보 추출
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken, TokenType.REFRESH_TOKEN);
 
         log.info("토큰에서 사용자 정보 추출 = {}", username);
-        // 3. DB에서 리프레시 토큰 삭제
+
         tokenService.deleteRefreshToken(username);
 
     }

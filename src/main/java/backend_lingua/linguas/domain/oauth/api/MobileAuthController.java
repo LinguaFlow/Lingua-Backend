@@ -4,7 +4,7 @@ import backend_lingua.linguas.domain.oauth.dto.LoginResponse;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
 import backend_lingua.linguas.domain.oauth.service.AuthService;
 
-import backend_lingua.linguas.infrastructure.security.dto.TokenInfo;
+import backend_lingua.linguas.infrastructure.security.token.dto.TokenInfo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,6 +1,6 @@
 package backend_lingua.linguas.infrastructure.security.filter;
 
-import backend_lingua.linguas.infrastructure.security.dto.TokenInfo;
+import backend_lingua.linguas.infrastructure.security.token.dto.TokenInfo;
 import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import backend_lingua.linguas.infrastructure.security.token.enumerated.TokenType;
 import backend_lingua.linguas.infrastructure.security.token.service.TokenService;
@@ -50,13 +50,7 @@ public class JwtTokenProvider {
         String refreshToken = createRefreshToken(authentication);
         Date accessTokenExpiryDate = createExpiryDate(accessTokenExpiration);
 
-        return TokenInfo.builder()
-                .accessToken(accessToken)
-                .accessTokenExpiresIn(accessTokenExpiryDate.getTime())
-                .refreshToken(refreshToken)
-                .refreshTokenExpiresIn(refreshTokenExpiration)
-                .tokenType("Bearer")
-                .build();
+        return TokenInfo.from(accessToken, refreshToken, accessTokenExpiryDate.getTime(), refreshTokenExpiration);
     }
 
     /**
