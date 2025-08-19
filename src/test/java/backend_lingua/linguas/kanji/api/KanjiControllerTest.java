@@ -1,6 +1,6 @@
 package backend_lingua.linguas.kanji.api;
 
-import backend_lingua.linguas.kanji.entity.TaskStatus;
+import backend_lingua.linguas.domain.kanji.entity.TaskStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.val;
