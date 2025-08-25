@@ -142,7 +142,7 @@ public class AuthServiceImpl implements AuthService {
 
         } catch (Exception e) {
             log.error("[{}] 사용자 정보 조회 실패: {}", provider.getProviderName(), e.getMessage());
-            throw new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND);
+            throw new BusinessException(HttpResponse.FailureStatus.OAUTH_USER_INFO_FETCH_FAILED);
         }
     }
 

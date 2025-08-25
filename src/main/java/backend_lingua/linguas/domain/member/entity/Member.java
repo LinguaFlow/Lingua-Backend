@@ -4,26 +4,21 @@ import backend_lingua.linguas.domain.member.enumerated.MemberRole;
 import backend_lingua.linguas.domain.oauth.enumerated.MemberRoleConverter;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderTypeConverter;
+import backend_lingua.linguas.global.config.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import lombok.experimental.SuperBuilder;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 @Getter
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-public class Member {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Member extends BaseEntity {
 
     @Column(nullable = false , name = "email")
     private String email;
@@ -42,15 +37,8 @@ public class Member {
     private String providerId;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "role")
     @Convert(converter = MemberRoleConverter.class)
     private MemberRole role;
-
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
 }

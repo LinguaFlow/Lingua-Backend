@@ -24,7 +24,11 @@ class HttpResponse {
     ) {
         BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 입력값 입니다."),
         KANJI_TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "한자 작업을 찾을 수 없습니다."),
-        KANJI_DATA_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "한자 데이터 처리 중 오류가 발생했습니다."),
+        USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
         SQS_MESSAGE_PARSE_ERROR(HttpStatus.BAD_REQUEST, "SQS 메시지 파싱에 실패했습니다."),
+
+        OAUTH_PROVIDER_NOT_FOUND(HttpStatus.BAD_REQUEST, "지원하지 않는 소셜 로그인 제공자입니다."),
+        OAUTH_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "소셜 로그인 계정에서 이메일을 찾을 수 없습니다."),
+        OAUTH_USER_INFO_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "소셜 로그인 사용자 정보 조회에 실패했습니다."),
     }
 }

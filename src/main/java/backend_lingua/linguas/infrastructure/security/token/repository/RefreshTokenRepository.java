@@ -1,7 +1,7 @@
 package backend_lingua.linguas.infrastructure.security.token.repository;
 
 
-import backend_lingua.linguas.infrastructure.security.token.dto.RefreshToken;
+import backend_lingua.linguas.infrastructure.security.token.entity.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

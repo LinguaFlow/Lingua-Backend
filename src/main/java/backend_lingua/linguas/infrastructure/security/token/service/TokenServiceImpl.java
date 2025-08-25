@@ -2,7 +2,7 @@ package backend_lingua.linguas.infrastructure.security.token.service;
 
 import backend_lingua.linguas.domain.member.entity.Member;
 import backend_lingua.linguas.domain.member.repository.MemberRepository;
-import backend_lingua.linguas.infrastructure.security.token.dto.RefreshToken;
+import backend_lingua.linguas.infrastructure.security.token.entity.RefreshToken;
 import backend_lingua.linguas.infrastructure.security.token.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
