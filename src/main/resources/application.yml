@@ -73,21 +73,18 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-# JWT 설정 - 키 이름 수정
+oauth2:
+  kakao:
+    user-info-uri: ${KAKAO_USER_INFO}
+  naver:
+    user-info-uri: ${NAVER_USER_INFO}
+
 jwt:
-  # 시크릿 키 (access와 refresh 각각 다른 키 사용)
   access-token-secret: ${ACCESS_TOKEN}
   refresh-token-secret: ${REFRESH_TOKEN}
 
-  # 만료 시간 (밀리초)
   access-token-expiration: ${EXPIRATION_TIME}
   refresh-token-expiration: ${EXPIRATION_DATE}
-
-  oauth2:
-    kakao:
-      user-info-uri: ${KAKAO_USER_INFO}
-    naver:
-      user-info-uri: ${NAVER_USER_INFO}
 
 management:
   endpoints:
@@ -95,7 +92,6 @@ management:
       exposure:
         include: prometheus, health, info
 
-# Pinpoint 관련 설정 추가
 pinpoint:
   web:
     applicationMap:
