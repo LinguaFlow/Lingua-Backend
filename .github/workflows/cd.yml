@@ -49,6 +49,7 @@ jobs:
           fi;
           docker run -d -p 8080:8080 \
             --env-file /home/ubuntu/.env \
+            -e KAKAO_JS_KEY='${{ secrets.KAKAO_JS_KEY }}' \
             -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
             -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
             -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
