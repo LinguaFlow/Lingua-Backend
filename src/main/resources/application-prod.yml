@@ -20,6 +20,9 @@ kanji:
   api:
     base-url: ${KANJI_API_BASE_URL}
 
+kakao:
+  js-key: ${KAKAO_JS_KEY}
+
 spring:
   cloud:
     aws:
