@@ -44,6 +44,9 @@ public class SecurityConfig {
                 // 요청 권한 설정
                 .authorizeHttpRequests(authorize -> authorize
                         // Public endpoints
+                        .requestMatchers("/", "/login", "/profile").permitAll()
+                        .requestMatchers("/js/**", "/css/**", "/images/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/error",

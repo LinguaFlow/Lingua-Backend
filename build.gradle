@@ -21,6 +21,9 @@ repositories { mavenCentral() }
 dependencies {
     /* ───────── Spring Boot ───────── */
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf' // 👈 추가
+
     // implementation 'org.springframework.boot:spring-boot-starter-webflux' // ❌ 같이 쓰지 말기
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
