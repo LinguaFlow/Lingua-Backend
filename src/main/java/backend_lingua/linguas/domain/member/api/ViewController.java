@@ -12,7 +12,7 @@ public class ViewController {
     @Value("${kakao.js-key}")
     private String kakaoJsKey;
 
-    @GetMapping({"/", "/login"})
+    @GetMapping("/login")
     public String login(Model model) {
         model.addAttribute("kakaoJsKey", kakaoJsKey);
         return "login";
@@ -21,5 +21,10 @@ public class ViewController {
     @GetMapping("/profile")
     public String profile() {
         return "profile"; // templates/profile.html
+    }
+
+    @GetMapping("/")
+    public String home() {
+        return "redirect:/login";
     }
 }
