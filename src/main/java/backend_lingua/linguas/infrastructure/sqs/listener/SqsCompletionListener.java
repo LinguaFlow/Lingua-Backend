@@ -1,7 +1,7 @@
 package backend_lingua.linguas.infrastructure.sqs.listener;
 
 import backend_lingua.linguas.domain.kanji.service.FlaskService;
-import backend_lingua.linguas.domain.kanji.service.KanjiService;
+import backend_lingua.linguas.domain.kanji.service.FileServiceImpl;
 import backend_lingua.linguas.global.exception.BusinessException;
 import backend_lingua.linguas.global.dto.HttpResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SqsCompletionListener {
 
-    private final KanjiService kanjiService;
+    private final FileServiceImpl fileServiceImpl;
     private final FlaskService flaskDataService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -56,7 +56,7 @@ public class SqsCompletionListener {
     }
 
     private void processCompletedTask(String s3Key) {
-        kanjiService.processKanjiData(s3Key, flaskDataService.fetchAll().get("details"));
+        fileServiceImpl.processKanjiData(s3Key, flaskDataService.fetchAll().get("details"));
     }
 
     private String normalizeToS3Key(String bookName) {
