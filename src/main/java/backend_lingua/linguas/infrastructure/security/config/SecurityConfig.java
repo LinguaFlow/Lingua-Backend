@@ -29,23 +29,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 .csrf(AbstractHttpConfigurer::disable)
-
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // H2 Console 허용
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
-
-                // 요청 권한 설정
                 .authorizeHttpRequests(authorize -> authorize
                         // Public endpoints
                         .requestMatchers("/", "/login", "/profile").permitAll()
-                        .requestMatchers("/js/**", "/css/**", "/images/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(
                                 "/",
@@ -63,13 +56,13 @@ public class SecurityConfig {
                                 "/api/v1/mobile/auth/**",
                                 "/api//user/profile"
                         ).permitAll()
+                        // Kanji API endpoints - require authentication
+                        .requestMatchers("/api/files/**").authenticated()
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // All other requests
                         .anyRequest().authenticated()
                 );
-        
+
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
