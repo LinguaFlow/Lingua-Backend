@@ -23,6 +23,7 @@ public class UserController {
         log.info("Get User Profile = {}" ,userPrincipal.toString() );
 
         MemberInfo member = MemberInfo.from(userPrincipal.getMember());
+
         return ResponseEntity.ok(member);
     }
 

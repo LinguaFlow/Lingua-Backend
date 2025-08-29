@@ -1,9 +1,9 @@
 package backend_lingua.linguas.kanji.api;
 
-import backend_lingua.linguas.domain.kanji.entity.TaskStatus;
+import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.val;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @DisplayName("KanjiController 실제 API 통합 테스트")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class KanjiControllerTest {
+class FileControllerTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -310,7 +310,7 @@ class KanjiControllerTest {
 
         String responseBody = result.getResponse().getContentAsString();
         JsonNode jsonResponse = objectMapper.readTree(responseBody);
-        val taskId = jsonResponse.get("id").asLong();
+        long taskId = jsonResponse.get("id").asLong();
 
         System.out.println("📋 업로드 응답: " + responseBody);
         System.out.println("🆔 생성된 작업 ID: " + taskId);
@@ -341,7 +341,7 @@ class KanjiControllerTest {
 
         String responseBody = result.getResponse().getContentAsString();
         JsonNode jsonResponse = objectMapper.readTree(responseBody);
-        val taskId = jsonResponse.get("id").asLong();
+        long taskId = jsonResponse.get("id").asLong();
 
         System.out.println("📋 업로드 응답: " + responseBody);
         System.out.println("🆔 생성된 작업 ID: " + taskId);

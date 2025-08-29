@@ -1,6 +1,6 @@
 package backend_lingua.linguas.domain.kanji.dto.response;
 
-import backend_lingua.linguas.domain.kanji.entity.Kanji;
+import backend_lingua.linguas.domain.kanji.entity.File;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -21,10 +21,10 @@ public class KanjiVocabularyListResponse {
     @JsonProperty("file_name")
     private List<KanjiVocabularyList> kanjiDetails;
 
-    public static KanjiVocabularyListResponse from(Kanji kanji) {
-        String bookName = kanji.getBookName();
+    public static KanjiVocabularyListResponse from(File file) {
+        String bookName = file.getBookName();
         List<KanjiVocabularyList> detailResponses = new ArrayList<>();
-        Map<String, Object> bookData = kanji.getBook();
+        Map<String, Object> bookData = file.getBook();
         if (bookData != null && !bookData.isEmpty()) {
             String fileNameKey = bookData.keySet().iterator().next();
             Object fileData = bookData.get(fileNameKey);

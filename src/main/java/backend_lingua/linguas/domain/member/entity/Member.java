@@ -1,5 +1,6 @@
 package backend_lingua.linguas.domain.member.entity;
 
+import backend_lingua.linguas.domain.kanji.entity.File;
 import backend_lingua.linguas.domain.member.enumerated.MemberRole;
 import backend_lingua.linguas.domain.oauth.enumerated.MemberRoleConverter;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
@@ -9,6 +10,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
