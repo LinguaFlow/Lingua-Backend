@@ -22,13 +22,12 @@ dependencies {
     /* ───────── Spring Boot ───────── */
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf' // 👈 추가
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
-    // implementation 'org.springframework.boot:spring-boot-starter-webflux' // ❌ 같이 쓰지 말기
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // ← 버전 명시 제거
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     /* ───────── OpenAPI / Swagger UI (springdoc) ───────── */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
@@ -45,7 +44,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
     /* ───────── Hibernate / DB ───────── */
-    implementation 'org.hibernate.orm:hibernate-spatial' // 버전 생략(부트 BOM이 관리)
+    implementation 'org.hibernate.orm:hibernate-spatial'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.0'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
@@ -70,6 +69,14 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
+// Include secrets folder in classpath
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources', 'secrets']
+        }
+    }
+}
 
 tasks.named('test') {
     useJUnitPlatform()

@@ -44,3 +44,10 @@ out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.env
+.env.local
+.env.prod
+
+application-local.yaml
+application-prod.yaml.

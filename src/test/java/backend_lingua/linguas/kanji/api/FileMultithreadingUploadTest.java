@@ -1,6 +1,6 @@
 package backend_lingua.linguas.kanji.api;
 
-import backend_lingua.linguas.domain.kanji.entity.TaskStatus;
+import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("KanjiController 실제 API 통합 테스트")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 
-public class KanjiMultithreadingUploadTest {
+public class FileMultithreadingUploadTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;

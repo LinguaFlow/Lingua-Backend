@@ -1,24 +1,24 @@
 package backend_lingua.linguas.domain.kanji.entity;
 
+import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.member.entity.Member;
+import backend_lingua.linguas.global.config.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 import java.util.HashMap;
 import java.util.Map;
-import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
-@Table
+@Table(name = "file")
 @Getter
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
-public class Kanji {
-
-    @Id
-    @GeneratedValue(strategy = IDENTITY)
-    private Long id;
+public class File extends BaseEntity {
 
     private String bookName;
 
@@ -32,6 +32,10 @@ public class Kanji {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private Map<String,Object> book = new HashMap<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
     public void completeProcessing(Map<String, Object> bookData) {
         this.book = bookData;
