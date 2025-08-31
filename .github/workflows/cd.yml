@@ -77,12 +77,13 @@ jobs:
             docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi;
           fi;
           docker run -d -p 8080:8080 \
-            -v /home/ubuntu/secrets:/app/BOOT-INF/classes/secrets:ro \
+            -v /home/ubuntu/secrets:/app/secrets:ro \
             --security-opt=no-new-privileges:true \
             --read-only \
             --tmpfs /tmp \
             --tmpfs /var/log \
             -e SPRING_PROFILES_ACTIVE=prod \
+            -e LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_CONTEXT_CONFIG=DEBUG \
             -e DB_URL='${{ secrets.DB_URL }}' \
             -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
             -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
