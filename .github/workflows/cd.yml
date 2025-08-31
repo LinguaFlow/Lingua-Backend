@@ -36,6 +36,35 @@ jobs:
             StrictHostKeyChecking no
           EOF
 
+      - name: Checkout code with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Validate secrets structure
+        run: |
+          if [ ! -d "src/main/resources/secrets" ]; then
+            echo "Error: secrets submodule not found"
+            exit 1
+          fi
+          if [ ! -f "src/main/resources/secrets/application-prod.yaml" ]; then
+            echo "Error: production config not found"
+            exit 1
+          fi
+          echo "Secrets validation passed"
+
+      - name: Copy secrets to server with verification
+        run: |
+          scp -r src/main/resources/secrets backend:/home/ubuntu/
+          ssh backend "
+          if [ ! -d '/home/ubuntu/secrets' ]; then
+            echo 'Error: Failed to copy secrets'
+            exit 1
+          fi
+          echo 'Secrets copied successfully'
+          "
+
       - name: Execute Deployment Commands on Backend
         run: |
           ssh backend "
@@ -48,8 +77,16 @@ jobs:
             docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi;
           fi;
           docker run -d -p 8080:8080 \
+            -v /home/ubuntu/secrets:/app/BOOT-INF/classes/secrets:ro \
+            --security-opt=no-new-privileges:true \
+            --read-only \
+            --tmpfs /tmp \
+            --tmpfs /var/log \
+            -e SPRING_PROFILES_ACTIVE=prod \
+            -e DB_URL='${{ secrets.DB_URL }}' \
+            -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
+            -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
             --env-file /home/ubuntu/.env \
-            -e KAKAO_JS_KEY='${{ secrets.KAKAO_JS_KEY }}' \
             -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
             -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
             -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
@@ -61,8 +98,6 @@ jobs:
             -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
             -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
             -e NODE_ENV='EC2' \
-            -e GOOGLE_CLIENT_ID='${{ secrets.GOOGLE_CLIENT_ID }}' \
-            -e GOOGLE_CLIENT_SECRET='${{ secrets.GOOGLE_CLIENT_SECRET }}' \
             -e NAVER_CLIENT_ID='${{ secrets.NAVER_CLIENT_ID }}' \
             -e NAVER_CLIENT_SECRET='${{ secrets.NAVER_CLIENT_SECRET }}' \
             -e KAKAO_CLIENT_ID='${{ secrets.KAKAO_CLIENT_ID }}' \
@@ -93,3 +128,25 @@ jobs:
             --restart always \
             --name lingua-backend \
             hwangjungseok/lingua-backend:latest"
+
+      - name: Cleanup old images on server
+        run: |
+          ssh backend "
+          # Keep only the 3 most recent images
+          docker images hwangjungseok/lingua-backend --format 'table {{.Repository}}:{{.Tag}}\t{{.ID}}' | \
+          tail -n +2 | head -n -3 | awk '{print \$2}' | xargs -r docker rmi
+          echo 'Image cleanup completed'
+          " || echo "Image cleanup failed but continuing"
+
+      - name: Send deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS="SUCCESS"
+            COLOR="good"
+          else
+            STATUS="FAILED"
+            COLOR="danger"
+          fi
+          
+          echo "Deployment $STATUS for commit ${{ github.sha }}"
