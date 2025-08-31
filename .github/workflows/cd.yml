@@ -77,39 +77,11 @@ jobs:
             docker images -q | grep -v \$IMAGE_ID | xargs -r docker rmi;
           fi;
           docker run -d -p 8080:8080 \
-            -v /home/ubuntu/secrets:/app/secrets:ro \
+            --env-file /home/ubuntu/.env \
             --security-opt=no-new-privileges:true \
             --read-only \
             --tmpfs /tmp \
             --tmpfs /var/log \
-            -e SPRING_PROFILES_ACTIVE=prod \
-            -e LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_CONTEXT_CONFIG=DEBUG \
-            -e DB_URL='${{ secrets.DB_URL }}' \
-            -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
-            -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
-            --env-file /home/ubuntu/.env \
-            -e AWS_SECRET_KEY='${{ secrets.AWS_SECRET_KEY }}' \
-            -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
-            -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
-            -e S3_ENDPOINT='${{ secrets.S3_ENDPOINT }}' \
-            -e AWS_REGION='${{ secrets.AWS_REGION }}' \
-            -e SQS_QUEUE_URL='${{ secrets.SQS_QUEUE_URL }}' \
-            -e SQS_QUEUE_NAME='${{ secrets.SQS_QUEUE_NAME }}' \
-            -e KANJI_API_BASE_URL='${{ secrets.KANJI_API_BASE_URL }}' \
-            -e MODEL_NAME='${{ secrets.MODEL_NAME }}' \
-            -e GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}' \
-            -e NODE_ENV='EC2' \
-            -e NAVER_CLIENT_ID='${{ secrets.NAVER_CLIENT_ID }}' \
-            -e NAVER_CLIENT_SECRET='${{ secrets.NAVER_CLIENT_SECRET }}' \
-            -e KAKAO_CLIENT_ID='${{ secrets.KAKAO_CLIENT_ID }}' \
-            -e KAKAO_CLIENT_SECRET='${{ secrets.KAKAO_CLIENT_SECRET }}' \
-            -e ACCESS_TOKEN='${{ secrets.ACCESS_TOKEN }}' \
-            -e REFRESH_TOKEN='${{ secrets.REFRESH_TOKEN }}' \
-            -e EXPIRATION_TIME='${{ secrets.EXPIRATION_TIME }}' \
-            -e EXPIRATION_DATE='${{ secrets.EXPIRATION_DATE }}' \
-            -e PINPOINT_AGENT_ID='${{ secrets.PINPOINT_AGENT_ID }}' \
-            -e PINPOINT_APPLICATION_NAME='${{ secrets.PINPOINT_APPLICATION_NAME }}' \
-            -e PINPOINT_COLLECTOR_IP='${{ secrets.PINPOINT_COLLECTOR_IP }}' \
             -e JAVA_TOOL_OPTIONS='-javaagent:/pinpoint-agent/pinpoint-bootstrap-2.5.4.jar \
               -Dpinpoint.agentId=${{ secrets.PINPOINT_AGENT_ID }} \
               -Dpinpoint.applicationName=${{ secrets.PINPOINT_APPLICATION_NAME }} \
