@@ -29,7 +29,7 @@ public class MobileAuthController {
             summary = "소셜 로그인",
             description = "제공처의 액세스 토큰으로 회원 정보 조회, 로그인 처리 후 액세스 토큰과 회원 정보를 응답으로 전송"
     )
-    @PostMapping(value = "/login/{provider}", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @PostMapping(value = "/login/{provider}")
     public ResponseEntity<LoginResponse> login(
             @Parameter(description = "소셜 로그인 제공자 (kakao, naver)", required = true)
             @PathVariable("provider") ProviderType provider,
@@ -44,7 +44,7 @@ public class MobileAuthController {
             summary = "액세스 토큰 재발급",
             description = "리프레시 토큰이 유효하다면, 새로운 액세스 토큰 발급"
     )
-    @PostMapping(value = "/reissue-token", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @PostMapping(value = "/reissue-token")
     public ResponseEntity<TokenInfo> reissueToken(@RequestBody String refreshToken) {
 
         TokenInfo tokenInfo = authService.reissueToken(refreshToken);
