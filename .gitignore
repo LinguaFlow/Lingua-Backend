@@ -36,7 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 *.yml
-*.yaml
 .DS_Store
 .DS_Store?
 ._*
@@ -44,6 +43,9 @@ out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+**/test/**/application.yaml
+**/test/**/application-test.yaml
 
 .env
 .env.local
