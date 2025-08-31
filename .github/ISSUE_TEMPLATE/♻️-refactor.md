@@ -15,16 +15,6 @@ assignees: ''
 
 왜 이 리팩터링이 필요한지 현재 코드의 문제점을 바탕으로 작성합니다.
 
-**리팩터링 범위 (Scope)**
-
-수정하거나 개선할 코드의 구체적인 범위(파일, 클래스, 함수 등)를 명시합니다.
-
-- src/components/A/index.js
-
-- src/components/B/index.js
-
-- src/services/api.js (신규 생성)
-
 **완료 조건 (Acceptance Criteria)**
 
  리팩터링이 '성공적으로 완료'되었다고 판단할 수 있는 기술적인 조건들을 나열합니다.
