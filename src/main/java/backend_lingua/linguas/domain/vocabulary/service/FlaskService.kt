@@ -1,4 +1,4 @@
-package backend_lingua.linguas.domain.kanji.service
+package backend_lingua.linguas.domain.vocabulary.service
 
 import backend_lingua.linguas.global.exception.BusinessException
 import backend_lingua.linguas.global.dto.HttpResponse

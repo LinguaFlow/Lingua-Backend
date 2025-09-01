@@ -1,6 +1,6 @@
 package backend_lingua.linguas.kanji.api;
 
-import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @DisplayName("KanjiController 실제 API 통합 테스트")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class FileControllerTest {
+class VocabularyWordControllerTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;
