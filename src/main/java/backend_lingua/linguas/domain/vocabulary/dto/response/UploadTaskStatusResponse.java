@@ -1,7 +1,7 @@
-package backend_lingua.linguas.domain.kanji.dto.response;
+package backend_lingua.linguas.domain.vocabulary.dto.response;
 
 
-import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @Builder
 @RequiredArgsConstructor
-public class FileUploadResponse {
+public class UploadTaskStatusResponse {
 
     private final Long taskId;
 

@@ -1,6 +1,6 @@
-package backend_lingua.linguas.domain.kanji.entity;
+package backend_lingua.linguas.domain.vocabulary.entity;
 
-import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
 import backend_lingua.linguas.domain.member.entity.Member;
 import backend_lingua.linguas.global.config.BaseEntity;
 import jakarta.persistence.*;
@@ -13,12 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "file")
+@Table(name = "vocabulary_word")
 @Getter
 @SuperBuilder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class File extends BaseEntity {
+public class VocabularyWord extends BaseEntity {
 
     private String bookName;
 

@@ -1,16 +1,15 @@
-package backend_lingua.linguas.domain.kanji.service;
+package backend_lingua.linguas.domain.vocabulary.service;
 
-import backend_lingua.linguas.domain.kanji.dto.response.FileUploadResponse;
-import backend_lingua.linguas.domain.kanji.dto.response.KanjiVocabularyListResponse;
-import backend_lingua.linguas.domain.kanji.entity.File;
-import backend_lingua.linguas.domain.kanji.enumerated.TaskStatus;
-import backend_lingua.linguas.domain.kanji.repository.FileRepository;
+import backend_lingua.linguas.domain.vocabulary.dto.response.KanjiVocabularyListResponse;
+import backend_lingua.linguas.domain.vocabulary.dto.response.UploadTaskStatusResponse;
+import backend_lingua.linguas.domain.vocabulary.entity.VocabularyWord;
+import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.repository.VocabularyWordRepository;
 import backend_lingua.linguas.domain.member.entity.Member;
 import backend_lingua.linguas.infrastructure.s3.service.S3Service;
 import backend_lingua.linguas.global.exception.BusinessException;
 import backend_lingua.linguas.global.dto.HttpResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,47 +20,53 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class FileServiceImpl {
+public class VocabularyWordServiceImpl implements VocabularyWordService {
 
-    private final FileRepository repository;
+    private final VocabularyWordRepository repository;
     private final S3Service s3Bucket;
 
     @Transactional
-    public FileUploadResponse uploadFile(Member member, MultipartFile file) {
+    public UploadTaskStatusResponse uploadFile(Member member, MultipartFile file) {
 
         String s3Key = s3Bucket.upload(file);
 
-        return saveKanjiTask(member, file.getOriginalFilename(), s3Key);
+        return saveVocabularyWord(member, file.getOriginalFilename(), s3Key);
     }
 
-    private FileUploadResponse saveKanjiTask(Member member, String fileName, String s3Key) {
-        File file = File.builder()
+    @Transactional(readOnly = true)
+    public UploadTaskStatusResponse uploadTaskStatus(Long fileId) {
+
+        VocabularyWord vocabularyWord = get(fileId);
+
+        return UploadTaskStatusResponse.builder()
+                .taskId(vocabularyWord.getId())
+                .fileName(vocabularyWord.getBookName())
+                .status(vocabularyWord.getStatus())
+                .build();
+    }
+
+    public KanjiVocabularyListResponse getCompletedTask(Long fileId) {
+
+        VocabularyWord vocabularyWord = repository.findById(fileId).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
+
+        return KanjiVocabularyListResponse.from(vocabularyWord);
+    }
+
+    private UploadTaskStatusResponse saveVocabularyWord(Member member, String fileName, String s3Key) {
+        VocabularyWord vocabularyWord = VocabularyWord.builder()
                 .bookName(Optional.ofNullable(fileName).orElse("unnamed"))
                 .s3Key(s3Key)
                 .status(TaskStatus.PENDING)
                 .member(member)
                 .build();
 
-        File result = repository.save(file);
+        VocabularyWord result = repository.save(vocabularyWord);
 
-        return FileUploadResponse.builder()
+        return UploadTaskStatusResponse.builder()
                 .taskId(result.getId())
                 .fileName(result.getBookName())
                 .status(result.getStatus())
                 .build();
-    }
-
-    @Transactional(readOnly = true)
-    public FileUploadResponse uploadStatus(Long fileId) {
-
-        File file = get(fileId);
-
-        return FileUploadResponse.builder()
-                .taskId(file.getId())
-                .fileName(file.getBookName())
-                .status(file.getStatus())
-                .build();
-
     }
 
     @Transactional
@@ -88,17 +93,8 @@ public class FileServiceImpl {
         }
     }
 
-//    public KanjiVocabularyListResponse getCompletedTask(Long fileId) {
-//
-//        File file = repository.findById(fileId).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
-//
-////        return file.getStatus().buildResultResponse(file);
-//    }
-
-
-
     @Transactional(readOnly = true)
-    public File get(Long id) {
+    public VocabularyWord get(Long id) {
         return repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
     }
 
