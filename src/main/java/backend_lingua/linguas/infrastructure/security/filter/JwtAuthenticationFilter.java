@@ -1,6 +1,7 @@
 package backend_lingua.linguas.infrastructure.security.filter;
 
 import backend_lingua.linguas.infrastructure.security.token.enumerated.TokenType;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,16 +27,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        try {
-            String token = getBearerToken(request);
 
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateAccessToken(token)) {
-                Authentication authentication = jwtTokenProvider.getAuthentication(token, TokenType.ACCESS_TOKEN);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Security Context에 '{}' 인증 정보를 저장했습니다.", authentication.getName());
+        String token = getBearerToken(request);
+
+        // 토큰이 있는 경우에만 검증
+        if (StringUtils.hasText(token)) {
+            try {
+                if (jwtTokenProvider.validateAccessToken(token)) {
+                    Authentication authentication = jwtTokenProvider.getAuthentication(token, TokenType.ACCESS_TOKEN);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Security Context에 '{}' 인증 정보를 저장했습니다.", authentication.getName());
+                }
+            } catch (ExpiredJwtException e) {
+                log.error("토큰 인증 실패: {}", e.getMessage());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
+                return;
             }
-        } catch (Exception e) {
-            log.error("JWT 인증 실패: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
@@ -51,4 +58,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 }
-
