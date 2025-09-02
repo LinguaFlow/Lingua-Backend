@@ -1,5 +1,6 @@
 package backend_lingua.linguas.infrastructure.sqs.config;
 
+import io.awspring.cloud.sqs.listener.acknowledgement.handler.AcknowledgementMode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,8 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import io.awspring.cloud.sqs.config.SqsMessageListenerContainerFactory;
+
+import java.time.Duration;
 
 @Configuration
 public class AwsSqsConfig {
@@ -61,6 +64,12 @@ public class AwsSqsConfig {
     SqsMessageListenerContainerFactory<Object> defaultSqsListenerContainerFactory(SqsAsyncClient sqsAsyncClient) {
         return SqsMessageListenerContainerFactory.builder()
                 .sqsAsyncClient(sqsAsyncClient)
+                .configure(options -> options
+                        .maxConcurrentMessages(10)          // 높은 병렬성
+                        .maxMessagesPerPoll(10)
+                        .acknowledgementMode(AcknowledgementMode.ON_SUCCESS)
+
+                )
                 .build();
     }
 
