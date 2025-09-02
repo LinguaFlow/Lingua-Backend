@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
+import io.awspring.cloud.sqs.listener.acknowledgement.Acknowledgement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class SqsCompletionListener {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @SqsListener("#{jsonEventQueueName}")
-    public void handleCompletionSignal(String messageBody) {
+    public void handleCompletionSignal(String messageBody, Acknowledgement ack) {
         log.info("📥 SQS 완료 신호 수신: {}", messageBody);
 
         try {
@@ -43,15 +44,10 @@ public class SqsCompletionListener {
             } else {
                 log.warn("⚠️ 조건 불일치 - status: '{}' (expected: 'complete'), bookName isEmpty: {}", status, bookName.isEmpty());
             }
-        } catch (BusinessException e) {
-            log.error("❌ 비즈니스 로직 처리 실패: {}", e.getMessage());
-            throw e; // BusinessException은 그대로 재던지기
         } catch (JsonProcessingException e) {
-            log.error("❌ SQS 메시지 JSON 파싱 실패", e);
+            log.error("❌ SQS 메시지 JSON 파싱 실패 - 메시지 삭제", e);
+            ack.acknowledge(); // 메시지 삭제하여 재시도 방지
             throw new BusinessException(HttpResponse.FailureStatus.SQS_MESSAGE_PARSE_ERROR);
-        } catch (Exception e) {
-            log.error("❌ SQS 완료 신호 처리 중 예상치 못한 오류", e);
-            throw new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST);
         }
     }
 
