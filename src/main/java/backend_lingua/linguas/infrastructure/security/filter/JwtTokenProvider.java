@@ -42,9 +42,6 @@ public class JwtTokenProvider {
 
     private final TokenService tokenService;
 
-    /**
-     * 액세스 토큰 & 리프레시 토큰 생성
-     */
     public TokenInfo generateToken(Authentication authentication) {
         String accessToken = createAccessToken(authentication);
         String refreshToken = createRefreshToken(authentication);
@@ -53,16 +50,10 @@ public class JwtTokenProvider {
         return TokenInfo.from(accessToken, refreshToken, accessTokenExpiryDate.getTime(), refreshTokenExpiration);
     }
 
-    /**
-     * 액세스 토큰 생성
-     */
     public String createAccessToken(Authentication authentication) {
         return createToken(authentication, accessTokenExpiration, accessTokenSecret);
     }
 
-    /**
-     * 리프레시 토큰 생성 및 저장
-     */
     public String createRefreshToken(Authentication authentication) {
         String token = createToken(authentication, refreshTokenExpiration, refreshTokenSecret);
         Date expiryDate = createExpiryDate(refreshTokenExpiration);
@@ -73,9 +64,6 @@ public class JwtTokenProvider {
         return token;
     }
 
-    /**
-     * JWT 토큰 생성 (공통 메서드)
-     */
     private String createToken(Authentication authentication, long expirationTime, String secretKey) {
         String authorities = authentication.getAuthorities()
                 .stream()
@@ -91,9 +79,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /**
-     * 토큰에서 사용자 이메일 추출
-     */
     public String getUsernameFromToken(String token, TokenType tokenType) {
         String secretKey = (tokenType == TokenType.ACCESS_TOKEN) ? accessTokenSecret : refreshTokenSecret;
 
@@ -105,9 +90,6 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
-    /**
-     * 토큰에서 Authentication 객체 생성
-     */
     public Authentication getAuthentication(String token, TokenType tokenType) {
         String username = getUsernameFromToken(token, tokenType);
         UserPrincipal userPrincipal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
@@ -119,23 +101,14 @@ public class JwtTokenProvider {
         );
     }
 
-    /**
-     * 액세스 토큰 검증
-     */
     public boolean validateAccessToken(String token) {
         return validateToken(token, accessTokenSecret);
     }
 
-    /**
-     * 리프레시 토큰 검증
-     */
     public boolean validateRefreshToken(String token) {
         return validateToken(token, refreshTokenSecret);
     }
 
-    /**
-     * 토큰 검증 (공통 메서드)
-     */
     private boolean validateToken(String token, String secretKey) {
         try {
             Jwts.parserBuilder()
@@ -143,10 +116,11 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token);
             return true;
-        } catch (SecurityException | MalformedJwtException e) {
-            log.error("잘못된 JWT 서명입니다.");
         } catch (ExpiredJwtException e) {
             log.error("만료된 JWT 토큰입니다.");
+            throw e;  // Filter에서 401 처리하도록
+        } catch (SecurityException | MalformedJwtException e) {
+            log.error("잘못된 JWT 서명입니다.");
         } catch (UnsupportedJwtException e) {
             log.error("지원되지 않는 JWT 토큰입니다.");
         } catch (IllegalArgumentException e) {
