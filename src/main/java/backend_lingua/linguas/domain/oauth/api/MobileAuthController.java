@@ -52,8 +52,11 @@ public class MobileAuthController {
         return ResponseEntity.ok(tokenInfo);
     }
 
+    @Operation(
+            summary = "로그아웃",
+            description = "Refresh Token을 삭제하여 로그아웃 처리"
+    )
     @PostMapping("/logout")
-    @Operation(summary = "로그아웃", description = "Refresh Token을 삭제하여 로그아웃 처리")
     public ResponseEntity<Void> logout(
             @RequestHeader(value = "Refresh-Token", required = false) String refreshTokenHeader) {
 
