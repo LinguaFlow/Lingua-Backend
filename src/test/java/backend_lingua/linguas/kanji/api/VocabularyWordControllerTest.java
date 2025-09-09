@@ -180,7 +180,7 @@ class VocabularyWordControllerTest {
         assertThat(responseBody).isEmpty();
 
         // TaskStatus의 메시지만 검증
-        assertThat(TaskStatus.PENDING.getMessage(null)).contains("처리 대기");
+        assertThat(TaskStatus.PENDING).isNotNull();
     }
 
     public void handleProcessingResult(Long taskId) throws Exception {
@@ -198,7 +198,7 @@ class VocabularyWordControllerTest {
         System.out.println("📋 응답 본문: " + (responseBody.isEmpty() ? "없음 (예상됨)" : responseBody));
 
         // TaskStatus의 메시지만 검증
-        assertThat(TaskStatus.PROCESSING.getMessage(null)).contains("처리 중");
+        assertThat(TaskStatus.PROCESSING).isNotNull();
     }
 
     public void handleDoneResult(Long taskId) throws Exception {

@@ -1,49 +1,25 @@
 package backend_lingua.linguas.domain.vocabulary.enumerated;
 
-import backend_lingua.linguas.domain.vocabulary.entity.VocabularyWord;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
+@RequiredArgsConstructor
 public enum TaskStatus {
 
-    PENDING("PENDING", "P001") {
-        @Override
-        public String getMessage(VocabularyWord vocabularyWord) {
-            return "파일이 업로드되어 처리 대기 중입니다.";
-        }
-    },
+    PENDING("PENDING", "P001" ,true) ,
 
-    PROCESSING("PROCESSING", "P002") {
-        @Override
-        public String getMessage(VocabularyWord vocabularyWord) {
-            return "파일을 처리 중입니다.";
-        }
-    },
+    PROCESSING("PROCESSING", "P002", true),
 
-    DONE("DONE", "D001") {
-        @Override
-        public String getMessage(VocabularyWord vocabularyWord) {
-            return "처리가 완료되었습니다. /result 엔드포인트에서 결과를 확인할 수 있습니다.";
-        }
-    },
+    DONE("DONE", "D001" , false),
 
-    FAILED("FAILED", "F001") {
-        @Override
-        public String getMessage(VocabularyWord vocabularyWord) {
-            return "처리 중 오류가 발생했습니다: " + vocabularyWord.getErrorMessage();
-        }
-    };
+    FAILED("FAILED", "F001" , false);
 
     private final String status;
+
     private final String code;
 
-    TaskStatus(String status, String code) {
-        this.status = status;
-        this.code = code;
-    }
-
-    // 도메인 로직만 담당
-    public abstract String getMessage(VocabularyWord vocabularyWord);
+    private final boolean cancellable;
 
     public boolean canBeProcessed() {
         return this == PENDING || this == PROCESSING;

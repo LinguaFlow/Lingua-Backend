@@ -1,5 +1,7 @@
 package backend_lingua.linguas.infrastructure.s3.service;
 
+import backend_lingua.linguas.global.dto.HttpResponse;
+import backend_lingua.linguas.global.exception.BusinessException;
 import backend_lingua.linguas.infrastructure.s3.config.S3Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -35,5 +38,12 @@ public class S3Service {
         } catch (IOException e) {
             throw new RuntimeException("S3 upload failed", e);
         }
+    }
+
+    public void delete(String s3Key) {
+        s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(s3Properties.getS3().getBucket())
+                .key(s3Key)
+                .build());
     }
 }
