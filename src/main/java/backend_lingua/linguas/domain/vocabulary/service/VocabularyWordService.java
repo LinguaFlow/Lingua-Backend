@@ -8,8 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 public interface VocabularyWordService {
 
     UploadTaskStatusResponse uploadFile(Member member, MultipartFile file);
+
     UploadTaskStatusResponse uploadTaskStatus(Long fileId);
 
     KanjiVocabularyListResponse getCompletedTask(Long fileId);
 
+    void cancelUpload(Member member, Long fileId);
 }
