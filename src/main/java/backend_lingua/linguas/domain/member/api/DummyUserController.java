@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-public class UserController {
+public class DummyUserController {
 
     @GetMapping("/user/profile")
     public ResponseEntity<MemberInfo> getUserProfile(
