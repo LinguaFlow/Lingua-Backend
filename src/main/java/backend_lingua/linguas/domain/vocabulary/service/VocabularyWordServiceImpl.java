@@ -1,9 +1,11 @@
 package backend_lingua.linguas.domain.vocabulary.service;
 
-import backend_lingua.linguas.domain.vocabulary.dto.response.KanjiVocabularyListResponse;
-import backend_lingua.linguas.domain.vocabulary.dto.response.UploadTaskStatusResponse;
+import backend_lingua.linguas.domain.vocabulary.dto.KanjiVocabularyListResponse;
+import backend_lingua.linguas.domain.vocabulary.dto.UploadTaskStatusResponse;
 import backend_lingua.linguas.domain.vocabulary.entity.VocabularyWord;
 import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.event.UploadStatusEventPublisher;
+import backend_lingua.linguas.domain.vocabulary.repository.VocabularyWordJdbcRepository;
 import backend_lingua.linguas.domain.vocabulary.repository.VocabularyWordRepository;
 import backend_lingua.linguas.domain.member.entity.Member;
 import backend_lingua.linguas.infrastructure.s3.service.S3Service;
@@ -22,45 +24,20 @@ import java.util.*;
 @RequiredArgsConstructor
 public class VocabularyWordServiceImpl implements VocabularyWordService {
 
-    private final VocabularyWordRepository repository;
+    private final VocabularyWordRepository vocabularyWordRepository;
+    private final VocabularyWordJdbcRepository vocabularyWordJdbcRepository;
+    private final UploadStatusEventPublisher eventPublisher;
     private final S3Service s3Bucket;
 
     @Transactional
     public UploadTaskStatusResponse uploadFile(Member member, MultipartFile file) {
-
         String s3Key = s3Bucket.upload(file);
 
-        return saveVocabularyWord(member, file.getOriginalFilename(), s3Key);
-    }
+        UploadTaskStatusResponse response = saveVocabularyWord(member, file.getOriginalFilename(), s3Key);
 
-    @Transactional(readOnly = true)
-    public UploadTaskStatusResponse uploadTaskStatus(Long fileId) {
+        eventPublisher.publishStatusUpdate(response.getTaskId(), TaskStatus.PENDING);
 
-        VocabularyWord vocabularyWord = get(fileId);
-
-        return UploadTaskStatusResponse.builder()
-                .taskId(vocabularyWord.getId())
-                .fileName(vocabularyWord.getBookName())
-                .status(vocabularyWord.getStatus())
-                .build();
-    }
-
-    @Transactional
-    public void cancelUpload(Member member, Long fileId) {
-        VocabularyWord vocabularyWord = repository.findById(fileId)
-                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
-
-        if (!vocabularyWord.getMember().getId().equals(member.getId())) {
-            throw new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND);
-        }
-
-        if (!vocabularyWord.getStatus().isCancellable()) {
-            throw new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST);
-        }
-
-        s3Bucket.delete(vocabularyWord.getS3Key());
-
-        repository.deleteById(vocabularyWord.getId());
+        return response;
     }
 
     private UploadTaskStatusResponse saveVocabularyWord(Member member, String fileName, String s3Key) {
@@ -71,7 +48,7 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
                 .member(member)
                 .build();
 
-        VocabularyWord result = repository.save(vocabularyWord);
+        VocabularyWord result = vocabularyWordRepository.save(vocabularyWord);
 
         return UploadTaskStatusResponse.builder()
                 .taskId(result.getId())
@@ -80,11 +57,18 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public UploadTaskStatusResponse uploadTaskStatus(Long fileId) {
+
+        return vocabularyWordJdbcRepository.findById(fileId)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND));
+    }
+
     @Transactional
     public void processKanjiData(String s3Key, Object kanjiDetails) {
-
-        log.info("s3eky={}", s3Key);
-        var file = repository.findByS3Key(s3Key).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
+        log.info("s3key={}", s3Key);
+        var file = vocabularyWordRepository.findByS3Key(s3Key)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
 
         if (!file.getStatus().canBeProcessed()) {
             log.warn("⚠️ 처리 불가능한 상태 - 현재 상태: {}, Task ID: {}, S3 Key: {}",
@@ -97,9 +81,14 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
 
             file.completeProcessing(bookData);
 
+            eventPublisher.publishStatusUpdate(file.getId(), TaskStatus.DONE);
+
+
             log.info("✅ Kanji 작업 처리 완료 - Task ID: {}", file.getId());
         } catch (Exception e) {
-            log.error("❌ Kanji 작업 처리 실패 - ID: {}, 파일명: '{}', 오류: {}", file.getId(), file.getBookName(), e.getMessage());
+
+            eventPublisher.publishStatusUpdate(file.getId(), TaskStatus.FAILED);
+
             throw e;
         }
     }
@@ -116,8 +105,41 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
         return KanjiVocabularyListResponse.from(vocabularyWord);
     }
 
-    public VocabularyWord get(Long id) {
-        return repository.findById(id).orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND));
+    @Transactional
+    public void deleteVocabularyWord(Long id) {
+        VocabularyWord vocabularyWord = vocabularyWordRepository
+                .findById(id)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND));
+
+        vocabularyWord.delete();
+
+        vocabularyWordRepository.save(vocabularyWord);
     }
 
+    @Transactional
+    public void cancelUpload(Member member, Long fileId) {
+        VocabularyWord vocabularyWord = vocabularyWordRepository
+                .findById(fileId)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST));
+
+        if (!vocabularyWord.getMember().getId().equals(member.getId())) {
+            throw new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND);
+        }
+
+        if (!vocabularyWord.getStatus().isCancellable()) {
+            throw new BusinessException(HttpResponse.FailureStatus.BAD_REQUEST);
+        }
+
+        s3Bucket.delete(vocabularyWord.getS3Key());
+
+        vocabularyWordRepository.deleteById(vocabularyWord.getId());
+
+        eventPublisher.publishStatusUpdate(fileId, TaskStatus.CANCELLED);
+    }
+
+    @Transactional(readOnly = true)
+    public VocabularyWord get(Long id) {
+        return vocabularyWordRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.USER_NOT_FOUND));
+    }
 }

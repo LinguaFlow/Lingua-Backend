@@ -1,4 +1,4 @@
-package backend_lingua.linguas.domain.vocabulary.dto.response;
+package backend_lingua.linguas.domain.vocabulary.dto;
 
 import backend_lingua.linguas.domain.vocabulary.entity.VocabularyWord;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,11 +19,11 @@ public class KanjiVocabularyListResponse {
     private String bookName;
 
     @JsonProperty("file_name")
-    private List<KanjiVocabularyList> kanjiDetails;
+    private List<KanjiVocabularyListDto> kanjiDetails;
 
     public static KanjiVocabularyListResponse from(VocabularyWord vocabularyWord) {
         String bookName = vocabularyWord.getBookName();
-        List<KanjiVocabularyList> detailResponses = new ArrayList<>();
+        List<KanjiVocabularyListDto> detailResponses = new ArrayList<>();
         Map<String, Object> bookData = vocabularyWord.getBook();
         if (bookData != null && !bookData.isEmpty()) {
             String fileNameKey = bookData.keySet().iterator().next();
@@ -43,7 +43,7 @@ public class KanjiVocabularyListResponse {
                     int page = ((Number) detailMap.getOrDefault("page", 0)).intValue();
 
                     detailResponses.add(
-                            KanjiVocabularyList.builder()
+                            KanjiVocabularyListDto.builder()
                                     .vocabularyBookOrder(worldOrder)
                                     .kanji(kanjis)
                                     .furigana(furigana)
