@@ -38,4 +38,8 @@ public class BaseEntity {
     @Column(name = "deleted_at", columnDefinition = "DATETIME(6)")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime deletedAt;
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
