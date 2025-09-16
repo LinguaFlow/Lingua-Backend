@@ -13,7 +13,9 @@ public enum TaskStatus {
 
     DONE("DONE", "D001" , false),
 
-    FAILED("FAILED", "F001" , false);
+    FAILED("FAILED", "F001" , false),
+
+    CANCELLED("CANCELLED", "F005" , false);
 
     private final String status;
 

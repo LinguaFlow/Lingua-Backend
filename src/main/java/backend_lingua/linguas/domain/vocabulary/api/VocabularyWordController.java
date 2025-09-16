@@ -1,7 +1,7 @@
 package backend_lingua.linguas.domain.vocabulary.api;
 
-import backend_lingua.linguas.domain.vocabulary.dto.response.UploadTaskStatusResponse;
-import backend_lingua.linguas.domain.vocabulary.dto.response.KanjiVocabularyListResponse;
+import backend_lingua.linguas.domain.vocabulary.dto.UploadTaskStatusResponse;
+import backend_lingua.linguas.domain.vocabulary.dto.KanjiVocabularyListResponse;
 import backend_lingua.linguas.domain.vocabulary.service.VocabularyWordService;
 import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,6 +61,16 @@ public class VocabularyWordController {
     ) {
         KanjiVocabularyListResponse completedTask = vocabularyWordService.getCompletedTask(id);
         return ResponseEntity.ok(completedTask);
+    }
+
+    @Operation(
+            summary = "업로드 파일 삭제",
+            description = "업로드 한 파일 삭제"
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void>  deleteVocabulary(@PathVariable Long id) {
+        vocabularyWordService.deleteVocabularyWord(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(

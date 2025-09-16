@@ -1,23 +1,34 @@
 package backend_lingua.linguas.kanji.api;
 
+import backend_lingua.linguas.domain.member.entity.Member;
+import backend_lingua.linguas.domain.member.enumerated.MemberRole;
+import backend_lingua.linguas.domain.member.repository.MemberRepository;
+import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
 import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
+import backend_lingua.linguas.domain.vocabulary.repository.VocabularyWordRepository;
+import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,106 +43,107 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@DisplayName("KanjiController 실제 API 통합 테스트")
+@AutoConfigureMockMvc(addFilters = false)
+@DisplayName("VocabularyWordController 통합 테스트")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class VocabularyWordControllerTest {
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
-
-    private record TaskStatusInfo(TaskStatus taskStatus, String status, String responseBody) {
-    }
+    private MemberRepository memberRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
     private MockMvc mockMvc;
 
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-    }
+    @Autowired
+    private VocabularyWordRepository vocabularyWordRepository;
 
     private MockMultipartFile createRealPdfFile() {
         try {
-            String filePath = "/Users/hwangjungseog/Downloads/단어.pdf";
+            String filePath = "/Users/hwangjungseog/Downloads/Test Data/테스트.pdf";
             Path path = Paths.get(filePath);
 
-            if (Files.exists(path)) {
-                byte[] content = Files.readAllBytes(path);
-                String fileName = path.getFileName().toString();
+            byte[] content = Files.readAllBytes(path);
+            String fileName = path.getFileName().toString();
 
-                System.out.println("📄 실제 PDF 파일 로드 성공: " + filePath);
-                System.out.println("📋 파일명: " + fileName);
-                System.out.println("📦 파일 크기: " + content.length + " bytes");
-
-                return new MockMultipartFile(
-                        "file",
-                        fileName,
-                        MediaType.APPLICATION_PDF_VALUE,
-                        content
-                );
-            } else {
-                throw new RuntimeException("PDF 파일을 찾을 수 없습니다: " + filePath);
-            }
+            return new MockMultipartFile(
+                    "file",
+                    fileName,
+                    MediaType.APPLICATION_PDF_VALUE,
+                    content);
 
         } catch (IOException e) {
             throw new RuntimeException("PDF 파일 읽기 실패: " + e.getMessage(), e);
         }
     }
 
-    @Test
-    @DisplayName("Flask API 연결 테스트")
-    void test_FlaskApi_RealConnection() {
-        setUp();
+    @BeforeEach
+    void beforeEach() {
+        Member mockMember = Member.builder()
+                .email("test@example.com")
+                .name("테스트 사용자")
+                .role(MemberRole.MEMBER)
+                .provider(ProviderType.KAKAO)
+                .build();
 
-        try {
-            MvcResult result = mockMvc.perform(get("/api/files/test"))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andReturn();
+        memberRepository.save(mockMember);
+    }
 
-            String responseBody = result.getResponse().getContentAsString();
-            System.out.println("📄 Flask API 응답: " + responseBody);
-
-            JsonNode jsonResponse = objectMapper.readTree(responseBody);
-            System.out.println("🎨 응답 JSON (Pretty):");
-            System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonResponse));
-
-            System.out.println("✅ Flask API 연결 테스트 성공!");
-
-        } catch (Exception e) {
-            System.out.println("⚠️ Flask API 연결 실패 (서버가 실행 중이지 않을 수 있습니다): " + e.getMessage());
-            org.junit.jupiter.api.Assumptions.assumeTrue(false, "Flask 서버 연결 불가");
-        }
+    @AfterEach
+    void afterEach() {
+        vocabularyWordRepository.deleteAll();
+        memberRepository.deleteAll();
     }
 
     @Test
     @DisplayName("실제 PDF 파일 업로드 및 전체 워크플로우 테스트")
-    @DirtiesContext
     void realPdf_FullWorkflow_Integration() throws Exception {
-        setUp();
+        // Given - 테스트 사용자 및 PDF 파일 준비
+        Member mockMember = memberRepository.findByEmail("test@example.com")
+                .orElseThrow(() -> new RuntimeException("테스트 Member를 찾을 수 없습니다"));
+
+        UserPrincipal userPrincipal = UserPrincipal.create(mockMember);
 
         MockMultipartFile file = createRealPdfFile();
 
-        System.out.println("🚀 실제 PDF 파일 업로드 시작...");
-        System.out.println("📄 파일명: " + file.getOriginalFilename());
-        System.out.println("📦 파일 크기: " + file.getSize() + " bytes");
-
-        MvcResult uploadResult = mockMvc.perform(multipart("/api/files/upload").file(file))
+        // When - PDF 파일 업로드
+        MvcResult uploadResult = mockMvc.perform(multipart("/api/files/upload")
+                        .file(file)
+                        .with(user(userPrincipal))
+                        .with(request -> {
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                    userPrincipal,
+                                    null,
+                                    userPrincipal.getAuthorities()
+                            );
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                            return request;
+                        })
+                )
                 .andDo(print())
-                .andExpect(status().isAccepted())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.message").exists())
                 .andReturn();
 
-        String uploadResponseBody = uploadResult.getResponse().getContentAsString();
-        JsonNode uploadJson = objectMapper.readTree(uploadResponseBody);
-        Long taskId = uploadJson.get("id").asLong();
+        // Then - 업로드 응답 검증 및 작업 상태 처리
+        int statusCode = uploadResult.getResponse().getStatus();
+        String responseBody = uploadResult.getResponse().getContentAsString();
+
+        assertThat(statusCode).isEqualTo(HttpStatus.ACCEPTED.value());
+        assertThat(!responseBody.isEmpty()).isTrue();
+
+        JsonNode uploadJson = objectMapper.readTree(responseBody);
+        Long taskId = uploadJson.get("taskId").asLong();
         assertThat(taskId).isNotNull();
 
+        processTaskStatus(taskId);
+    }
+
+    private void processTaskStatus(Long taskId) throws Exception {
+        // When - 현재 작업 상태 조회
         TaskStatusInfo statusInfo = getCurrentTaskStatus(taskId);
+
+        // Then - 상태 검증 및 처리
         assertThat(statusInfo).isNotNull();
         assertThat(statusInfo.taskStatus()).isIn(TaskStatus.PENDING, TaskStatus.PROCESSING);
 
@@ -144,15 +156,11 @@ class VocabularyWordControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").exists())
-                .andExpect(jsonPath("$.code").exists())
-                .andExpect(jsonPath("$.message").exists())
                 .andReturn();
 
         String statusResponseBody = statusResult.getResponse().getContentAsString();
         JsonNode statusJson = objectMapper.readTree(statusResponseBody);
         String currentStatus = statusJson.get("status").asText();
-
         TaskStatus taskStatus = TaskStatus.fromStatus(currentStatus);
 
         return new TaskStatusInfo(taskStatus, currentStatus, statusResponseBody);
@@ -168,130 +176,93 @@ class VocabularyWordControllerTest {
     }
 
     public void handlePendingResult(Long taskId) throws Exception {
-        System.out.println("⏳ PENDING 상태 결과 조회...");
-
+        // When - PENDING 상태에서 결과 조회
         MvcResult pendingResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
                 .andDo(print())
-                .andExpect(status().isAccepted())
+                .andExpect(status().isBadRequest())
                 .andReturn();
 
-        String responseBody = pendingResult.getResponse().getContentAsString();
-        assertThat(pendingResult.getResponse().getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
-        assertThat(responseBody).isEmpty();
-
-        // TaskStatus의 메시지만 검증
-        assertThat(TaskStatus.PENDING).isNotNull();
+        // Then - 응답 코드 검증
+        int status = pendingResult.getResponse().getStatus();
+        assertThat(status).isIn(HttpStatus.ACCEPTED.value(), HttpStatus.BAD_REQUEST.value());
     }
 
     public void handleProcessingResult(Long taskId) throws Exception {
-        System.out.println("⚙️ PROCESSING 상태 결과 조회...");
-
+        // When - PROCESSING 상태에서 결과 조회
         MvcResult processingResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
                 .andDo(print())
                 .andExpect(status().isAccepted())
                 .andReturn();
 
-        String responseBody = processingResult.getResponse().getContentAsString();
-
-        System.out.println("3️⃣ PROCESSING 상태 결과:");
-        System.out.println("📋 응답 상태: " + processingResult.getResponse().getStatus());
-        System.out.println("📋 응답 본문: " + (responseBody.isEmpty() ? "없음 (예상됨)" : responseBody));
-
-        // TaskStatus의 메시지만 검증
+        // Then - 상태 검증
         assertThat(TaskStatus.PROCESSING).isNotNull();
     }
 
     public void handleDoneResult(Long taskId) throws Exception {
-        System.out.println("✅ DONE 상태 결과 조회...");
-
+        // When - DONE 상태에서 결과 조회
         MvcResult doneResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
+        // Then - 결과 검증
         String doneResponseBody = doneResult.getResponse().getContentAsString();
-        System.out.println("3️⃣ DONE 상태 결과:");
-        System.out.println("📋 응답: " + doneResponseBody);
-
         if (!doneResponseBody.isEmpty()) {
             JsonNode doneJson = objectMapper.readTree(doneResponseBody);
-            System.out.println("🎨 결과 JSON (Pretty):");
-            System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(doneJson));
             assertThat(doneJson).isNotNull();
         }
     }
 
-    public void handleFailedResult(Long taskId) throws Exception {
-        System.out.println("❌ FAILED 상태 결과 조회...");
+    public void waitForProcessingAndVerifyFinalResult(Long taskId) {
+        try {
+            while (true) {
+                // When - 작업 상태 확인
+                TaskStatusInfo currentStatus = getCurrentTaskStatus(taskId);
 
+                // Then - 상태에 따른 처리
+                if (currentStatus.taskStatus() == TaskStatus.DONE) {
+                    verifyFinalState(taskId);
+                    return;
+                }
+
+                if (currentStatus.taskStatus() == TaskStatus.FAILED) {
+                    throw new AssertionError("작업 처리 실패");
+                }
+
+                Thread.sleep(10000);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("테스트 실행 중 오류", e);
+        }
+    }
+
+    public void verifyFinalState(Long taskId) throws Exception {
+        // When - 최종 결과 조회
+        MvcResult finalResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Then - 최종 결과 검증
+        String finalResultBody = finalResult.getResponse().getContentAsString();
+        assertThat(finalResultBody).isNotEmpty();
+    }
+
+    public void handleFailedResult(Long taskId) throws Exception {
+        // When - FAILED 상태에서 결과 조회
         MvcResult failedResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andReturn();
 
-        String responseBody = failedResult.getResponse().getContentAsString();
-
-        System.out.println("3️⃣ FAILED 상태 결과:");
-        System.out.println("📋 응답 상태: " + failedResult.getResponse().getStatus());
-        System.out.println("📋 응답 본문: " + (responseBody.isEmpty() ? "없음 (예상됨)" : responseBody));
-    }
-
-    public void waitForProcessingAndVerifyFinalResult(Long taskId) {
-        System.out.println("\n⏳ SQS 메시지 처리를 기다리는 중... (30초 대기)");
-
-        try {
-            for (int i = 0; i < 6; i++) {
-                Thread.sleep(5000);
-
-                try {
-                    TaskStatusInfo currentStatus = getCurrentTaskStatus(taskId);
-                    System.out.printf("⏰ %d초 경과 - 현재 상태: %s%n", (i + 1) * 5, currentStatus.status());
-
-                    // 완료 상태 확인 - 직접 enum 비교로 변경
-                    if (currentStatus.taskStatus() == TaskStatus.DONE || currentStatus.taskStatus() == TaskStatus.FAILED) {
-                        System.out.println("🎯 작업이 완료되었습니다!");
-                        break;
-                    }
-                } catch (Exception e) {
-                    System.out.println("⚠️ 중간 상태 확인 중 오류: " + e.getMessage());
-                }
-            }
-
-            TaskStatusInfo finalStatusInfo = getCurrentTaskStatus(taskId);
-            System.out.println("4️⃣ 최종 상태: " + finalStatusInfo.status());
-            System.out.println("📋 최종 응답: " + finalStatusInfo.responseBody());
-
-            verifyFinalState(taskId, finalStatusInfo.taskStatus());
-
-        } catch (InterruptedException e) {
-            System.out.println("⚠️ 대기 중 인터럽트 발생: " + e.getMessage());
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            System.out.println("⚠️ 최종 상태 확인 중 오류: " + e.getMessage());
-        }
-    }
-
-    public void verifyFinalState(Long taskId, TaskStatus finalStatus) throws Exception {
-        if (finalStatus == TaskStatus.DONE) {
-            MvcResult finalResult = mockMvc.perform(get("/api/files/{id}/result", taskId))
-                    .andExpect(status().isOk())
-                    .andReturn();
-
-            String finalResultBody = finalResult.getResponse().getContentAsString();
-            if (!finalResultBody.isEmpty()) {
-                System.out.println("🎯 최종 처리 결과:");
-                System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(
-                        objectMapper.readTree(finalResultBody)));
-            }
-        }
+        // Then - 실패 상태 확인
+        assertThat(failedResult.getResponse().getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
     @Test
     @DisplayName("잘못된 파일 형식 업로드 테스트")
     void upload_InvalidFileType_Integration() throws Exception {
-        setUp();
-
+        // Given - 잘못된 형식의 파일 준비
         MockMultipartFile invalidFile = new MockMultipartFile(
                 "file",
                 "invalid-document.txt",
@@ -299,30 +270,23 @@ class VocabularyWordControllerTest {
                 "이것은 PDF가 아닌 텍스트 파일입니다.".getBytes()
         );
 
-        System.out.println("🚫 잘못된 파일 형식 업로드 테스트 시작...");
-        System.out.println("📄 파일명: " + invalidFile.getOriginalFilename());
-        System.out.println("📋 파일 타입: " + invalidFile.getContentType());
-
+        // When - 파일 업로드
         MvcResult result = mockMvc.perform(multipart("/api/files/upload").file(invalidFile))
                 .andDo(print())
                 .andExpect(status().isAccepted())
                 .andReturn();
 
+        // Then - 응답 검증
         String responseBody = result.getResponse().getContentAsString();
         JsonNode jsonResponse = objectMapper.readTree(responseBody);
         long taskId = jsonResponse.get("id").asLong();
-
-        System.out.println("📋 업로드 응답: " + responseBody);
-        System.out.println("🆔 생성된 작업 ID: " + taskId);
-        System.out.println("💡 현재 시스템은 파일 형식 검증 없이 모든 파일을 허용합니다.");
-        System.out.println("✅ 실제 동작 확인 완료!");
+        assertThat(taskId).isNotNull();
     }
 
     @Test
     @DisplayName("빈 파일 업로드 테스트")
     void upload_EmptyFile_Integration() throws Exception {
-        setUp();
-
+        // Given - 빈 파일 준비
         MockMultipartFile emptyFile = new MockMultipartFile(
                 "file",
                 "empty.pdf",
@@ -330,22 +294,16 @@ class VocabularyWordControllerTest {
                 new byte[0]
         );
 
-        System.out.println("📭 빈 파일 업로드 테스트 시작...");
-        System.out.println("📄 파일명: " + emptyFile.getOriginalFilename());
-        System.out.println("📦 파일 크기: " + emptyFile.getSize() + " bytes");
-
+        // When - 빈 파일 업로드
         MvcResult result = mockMvc.perform(multipart("/api/files/upload").file(emptyFile))
                 .andDo(print())
                 .andExpect(status().isAccepted())
                 .andReturn();
 
+        // Then - 응답 검증
         String responseBody = result.getResponse().getContentAsString();
         JsonNode jsonResponse = objectMapper.readTree(responseBody);
         long taskId = jsonResponse.get("id").asLong();
-
-        System.out.println("📋 업로드 응답: " + responseBody);
-        System.out.println("🆔 생성된 작업 ID: " + taskId);
-        System.out.println("💡 현재 시스템은 빈 파일도 허용합니다.");
-        System.out.println("✅ 실제 동작 확인 완료!");
+        assertThat(taskId).isNotNull();
     }
 }

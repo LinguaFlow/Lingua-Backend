@@ -22,12 +22,10 @@ public class VocabularyWord extends BaseEntity {
 
     private String bookName;
 
-    private String s3Key; // S3 키 저장용 필드
+    private String s3Key;
 
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
-
-    private String errorMessage;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
