@@ -61,14 +61,14 @@ public class AwsSqsConfig {
 
     // SQS 리스너 컨테이너 팩토리 설정 (메시지 수신용)
     @Bean
-    SqsMessageListenerContainerFactory<Object> defaultSqsListenerContainerFactory(SqsAsyncClient sqsAsyncClient) {
+    SqsMessageListenerContainerFactory<Object> defaultSqsListenerContainerFactory(
+            SqsAsyncClient sqsAsyncClient) {
         return SqsMessageListenerContainerFactory.builder()
                 .sqsAsyncClient(sqsAsyncClient)
                 .configure(options -> options
-                        .maxConcurrentMessages(10)          // 높은 병렬성
+                        .maxConcurrentMessages(10)
                         .maxMessagesPerPoll(10)
-                        .acknowledgementMode(AcknowledgementMode.ON_SUCCESS)
-
+                        .acknowledgementMode(AcknowledgementMode.MANUAL)
                 )
                 .build();
     }
