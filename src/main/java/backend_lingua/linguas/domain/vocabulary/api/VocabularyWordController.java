@@ -6,6 +6,7 @@ import backend_lingua.linguas.domain.vocabulary.service.VocabularyWordService;
 import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -61,16 +62,6 @@ public class VocabularyWordController {
     ) {
         KanjiVocabularyListResponse completedTask = vocabularyWordService.getCompletedTask(id);
         return ResponseEntity.ok(completedTask);
-    }
-
-    @Operation(
-            summary = "업로드 파일 삭제",
-            description = "업로드 한 파일 삭제"
-    )
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void>  deleteVocabulary(@PathVariable Long id) {
-        vocabularyWordService.deleteVocabularyWord(id);
-        return ResponseEntity.noContent().build();
     }
 
     @Operation(
