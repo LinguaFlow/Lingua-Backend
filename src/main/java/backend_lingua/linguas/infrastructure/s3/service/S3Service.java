@@ -23,7 +23,7 @@ public class S3Service {
     private final S3Client s3Client;
 
     public String upload(MultipartFile file) {
-        String key = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String key = UUID.randomUUID() + "_" + file.getOriginalFilename() + ".json";
         try {
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(s3Properties.getS3().getBucket())
