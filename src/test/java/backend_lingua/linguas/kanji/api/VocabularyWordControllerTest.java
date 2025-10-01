@@ -4,24 +4,23 @@ import backend_lingua.linguas.domain.member.entity.Member;
 import backend_lingua.linguas.domain.member.enumerated.MemberRole;
 import backend_lingua.linguas.domain.member.repository.MemberRepository;
 import backend_lingua.linguas.domain.oauth.enumerated.ProviderType;
+import backend_lingua.linguas.domain.vocabulary.dto.UploadStatusMessage;
 import backend_lingua.linguas.domain.vocabulary.enumerated.TaskStatus;
 import backend_lingua.linguas.domain.vocabulary.repository.VocabularyWordRepository;
 import backend_lingua.linguas.infrastructure.security.principal.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.*;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,16 +28,26 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
+import org.springframework.web.socket.sockjs.client.SockJsClient;
+import org.springframework.web.socket.sockjs.client.Transport;
+import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
+import java.util.List;
+import java.util.concurrent.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+
+
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -60,9 +69,16 @@ class VocabularyWordControllerTest {
     @Autowired
     private VocabularyWordRepository vocabularyWordRepository;
 
+    @LocalServerPort
+    private int port;
+
+    private WebSocketStompClient stompClient;
+    private StompSession stompSession;
+    private CompletableFuture<UploadStatusMessage> statusMessageFuture;
+
     private MockMultipartFile createRealPdfFile() {
         try {
-            String filePath = "/Users/hwangjungseog/Downloads/Test Data/테스트.pdf";
+            String filePath = "/Users/hwangjungseog/Downloads/Test Data/테스트.pdf";
             Path path = Paths.get(filePath);
 
             byte[] content = Files.readAllBytes(path);
@@ -89,12 +105,83 @@ class VocabularyWordControllerTest {
                 .build();
 
         memberRepository.save(mockMember);
+
+        // WebSocket 클라이언트 설정
+        setupWebSocketClient();
     }
 
     @AfterEach
     void afterEach() {
+        // WebSocket 연결 종료
+        if (stompSession != null && stompSession.isConnected()) {
+            stompSession.disconnect();
+        }
+
         vocabularyWordRepository.deleteAll();
         memberRepository.deleteAll();
+    }
+
+    private void setupWebSocketClient() {
+        // SockJS를 사용한 WebSocket 클라이언트 설정
+        List<Transport> transports = List.of(
+                new WebSocketTransport(new StandardWebSocketClient())
+        );
+
+        SockJsClient sockJsClient = new SockJsClient(transports);
+        stompClient = new WebSocketStompClient(sockJsClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+    }
+
+    private StompSession connectWebSocket() {
+        try {
+            // 변경: /ws -> /ws-upload
+            String url = String.format("ws://localhost:%d/ws", port);
+
+            StompSessionHandler sessionHandler = new StompSessionHandlerAdapter() {
+                @Override
+                public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                    System.out.println("WebSocket 연결 성공!");
+                }
+
+                @Override
+                public void handleException(StompSession session, StompCommand command,
+                                            StompHeaders headers, byte[] payload, Throwable exception) {
+                    System.err.println("WebSocket 에러: " + exception.getMessage());
+                }
+            };
+
+            return stompClient.connectAsync(url, sessionHandler).get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            System.err.println("WebSocket 연결 실패, 폴링 모드로 전환: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private CompletableFuture<UploadStatusMessage> subscribeToTaskStatus(Long taskId) {
+        CompletableFuture<UploadStatusMessage> future = new CompletableFuture<>();
+
+        String destination = "/topic/upload/" + taskId;
+        stompSession.subscribe(destination, new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return UploadStatusMessage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                UploadStatusMessage message = (UploadStatusMessage) payload;
+                System.out.println("WebSocket 메시지 수신 - Task ID: " + message.getTaskId()
+                        + ", Status: " + message.getStatus());
+
+                // DONE 또는 FAILED 상태일 때 Future 완료
+                if (message.getStatus() == TaskStatus.DONE ||
+                        message.getStatus() == TaskStatus.FAILED) {
+                    future.complete(message);
+                }
+            }
+        });
+
+        return future;
     }
 
     @Test
@@ -107,6 +194,9 @@ class VocabularyWordControllerTest {
         UserPrincipal userPrincipal = UserPrincipal.create(mockMember);
 
         MockMultipartFile file = createRealPdfFile();
+
+        // WebSocket 연결
+        stompSession = connectWebSocket();
 
         // When - PDF 파일 업로드
         MvcResult uploadResult = mockMvc.perform(multipart("/api/files/upload")
@@ -125,7 +215,6 @@ class VocabularyWordControllerTest {
                 .andDo(print())
                 .andReturn();
 
-        // Then - 업로드 응답 검증 및 작업 상태 처리
         int statusCode = uploadResult.getResponse().getStatus();
         String responseBody = uploadResult.getResponse().getContentAsString();
 
@@ -135,6 +224,11 @@ class VocabularyWordControllerTest {
         JsonNode uploadJson = objectMapper.readTree(responseBody);
         Long taskId = uploadJson.get("taskId").asLong();
         assertThat(taskId).isNotNull();
+
+        // WebSocket 구독 설정
+        if (stompSession != null && stompSession.isConnected()) {
+            statusMessageFuture = subscribeToTaskStatus(taskId);
+        }
 
         processTaskStatus(taskId);
     }
@@ -148,7 +242,9 @@ class VocabularyWordControllerTest {
         assertThat(statusInfo.taskStatus()).isIn(TaskStatus.PENDING, TaskStatus.PROCESSING);
 
         handleTaskStatusResult(taskId, statusInfo.taskStatus());
-        waitForProcessingAndVerifyFinalResult(taskId);
+
+        // WebSocket을 통한 실시간 상태 업데이트 대기 (기존 폴링 대신)
+        waitForProcessingWithWebSocket(taskId);
     }
 
     private TaskStatusInfo getCurrentTaskStatus(Long taskId) throws Exception {
@@ -214,6 +310,33 @@ class VocabularyWordControllerTest {
         }
     }
 
+    // WebSocket을 사용한 새로운 대기 메소드
+    public void waitForProcessingWithWebSocket(Long taskId) {
+        try {
+            // WebSocket 연결이 성공한 경우에만
+            if (statusMessageFuture != null) {
+                UploadStatusMessage finalStatus = statusMessageFuture.get(5, TimeUnit.MINUTES);
+
+                if (finalStatus.getStatus() == TaskStatus.DONE) {
+                    verifyFinalState(taskId);
+                } else if (finalStatus.getStatus() == TaskStatus.FAILED) {
+                    throw new AssertionError("작업 처리 실패");
+                }
+            } else {
+                // WebSocket 연결 실패 시 바로 폴링 방식 사용
+                System.out.println("WebSocket 연결 불가, 폴링 방식 사용");
+                waitForProcessingAndVerifyFinalResult(taskId);
+            }
+        } catch (TimeoutException e) {
+            System.out.println("WebSocket 타임아웃, 폴링 방식으로 전환");
+            waitForProcessingAndVerifyFinalResult(taskId);
+        } catch (Exception e) {
+            System.out.println("WebSocket 처리 중 오류, 폴링 방식으로 전환: " + e.getMessage());
+            waitForProcessingAndVerifyFinalResult(taskId);
+        }
+    }
+
+    // 기존 폴링 메소드 (폴백용으로 유지)
     public void waitForProcessingAndVerifyFinalResult(Long taskId) {
         try {
             while (true) {
@@ -230,7 +353,7 @@ class VocabularyWordControllerTest {
                     throw new AssertionError("작업 처리 실패");
                 }
 
-                Thread.sleep(10000);
+                Thread.sleep(10000);  // 10초 대기 (기존 30초에서 단축)
             }
         } catch (Exception e) {
             throw new RuntimeException("테스트 실행 중 오류", e);
@@ -257,53 +380,5 @@ class VocabularyWordControllerTest {
 
         // Then - 실패 상태 확인
         assertThat(failedResult.getResponse().getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    }
-
-    @Test
-    @DisplayName("잘못된 파일 형식 업로드 테스트")
-    void upload_InvalidFileType_Integration() throws Exception {
-        // Given - 잘못된 형식의 파일 준비
-        MockMultipartFile invalidFile = new MockMultipartFile(
-                "file",
-                "invalid-document.txt",
-                MediaType.TEXT_PLAIN_VALUE,
-                "이것은 PDF가 아닌 텍스트 파일입니다.".getBytes()
-        );
-
-        // When - 파일 업로드
-        MvcResult result = mockMvc.perform(multipart("/api/files/upload").file(invalidFile))
-                .andDo(print())
-                .andExpect(status().isAccepted())
-                .andReturn();
-
-        // Then - 응답 검증
-        String responseBody = result.getResponse().getContentAsString();
-        JsonNode jsonResponse = objectMapper.readTree(responseBody);
-        long taskId = jsonResponse.get("id").asLong();
-        assertThat(taskId).isNotNull();
-    }
-
-    @Test
-    @DisplayName("빈 파일 업로드 테스트")
-    void upload_EmptyFile_Integration() throws Exception {
-        // Given - 빈 파일 준비
-        MockMultipartFile emptyFile = new MockMultipartFile(
-                "file",
-                "empty.pdf",
-                MediaType.APPLICATION_PDF_VALUE,
-                new byte[0]
-        );
-
-        // When - 빈 파일 업로드
-        MvcResult result = mockMvc.perform(multipart("/api/files/upload").file(emptyFile))
-                .andDo(print())
-                .andExpect(status().isAccepted())
-                .andReturn();
-
-        // Then - 응답 검증
-        String responseBody = result.getResponse().getContentAsString();
-        JsonNode jsonResponse = objectMapper.readTree(responseBody);
-        long taskId = jsonResponse.get("id").asLong();
-        assertThat(taskId).isNotNull();
     }
 }

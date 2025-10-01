@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -66,9 +67,12 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
 
     @Transactional
     public void processKanjiData(String s3Key, Object kanjiDetails) {
-        log.info("s3key={}", s3Key);
+        StopWatch stopWatch = new StopWatch("CreateEvent");
+
+        stopWatch.start("getEvent");
         var file = vocabularyWordRepository.findByS3Key(s3Key)
                 .orElseThrow(() -> new BusinessException(HttpResponse.FailureStatus.KANJI_TASK_NOT_FOUND));
+        stopWatch.stop();
 
         if (!file.getStatus().canBeProcessed()) {
             log.warn("⚠️ 처리 불가능한 상태 - 현재 상태: {}, Task ID: {}, S3 Key: {}",
@@ -77,6 +81,7 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
         }
 
         try {
+            stopWatch.start("saveEvent");
             Map<String, Object> bookData = Collections.singletonMap("details", kanjiDetails);
 
             file.completeProcessing(bookData);
@@ -85,10 +90,9 @@ public class VocabularyWordServiceImpl implements VocabularyWordService {
 
 
             log.info("✅ Kanji 작업 처리 완료 - Task ID: {}", file.getId());
+            stopWatch.stop();
         } catch (Exception e) {
-
             eventPublisher.publishStatusUpdate(file.getId(), TaskStatus.FAILED);
-
             throw e;
         }
     }

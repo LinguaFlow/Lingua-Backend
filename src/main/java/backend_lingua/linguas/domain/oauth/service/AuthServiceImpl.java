@@ -54,13 +54,17 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse socialLogin(ProviderType provider, String accessToken) {
-        log.info("[소셜 로그인] provider: {}", provider.getProviderName());
+        log.info("[소셜 로그인] provider: {}, token: {}", provider.getProviderName(), accessToken.substring(0, Math.min(10, accessToken.length())));
+
 
         // 1. Provider API 호출하여 사용자 정보 가져오기
         Map<String, Object> attributes = fetchUserAttributes(provider, accessToken);
 
+        log.info("Provider 응답: {}", attributes);
         // 2. OAuth2UserInfo 객체 생성
         OAuth2UserInfo userInfo = createOAuth2UserInfo(provider, attributes);
+        log.info("파싱된 사용자 정보 - email: {}, name: {}, id: {}",
+                userInfo.getEmail(), userInfo.getName(), userInfo.getId());
 
         // 3. 이메일 검증
         validateEmail(userInfo.getEmail(), provider);
