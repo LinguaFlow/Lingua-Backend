@@ -36,7 +36,11 @@ public class SqsCompletionListener {
             String status = signal.path("status").asText();
             String bookName = signal.path("bookName").asText();
 
-            if ("SUCCESS".equals(status) && !bookName.isEmpty()) {
+            log.info("signal = {}" , signal);
+            log.info("status = {}" , status);
+            log.info("bookName = {}" , bookName);
+
+            if ("complete".equals(status) && !bookName.isEmpty()) {
                 String normalizedS3Key = normalizeToS3Key(bookName);
 
                 log.info("🔑 S3 키 정규화: '{}' → '{}'", bookName, normalizedS3Key);
@@ -44,7 +48,7 @@ public class SqsCompletionListener {
                 processCompletedTask(normalizedS3Key, bookName);
             }
         } catch (JsonProcessingException e) {
-            errorHandler.handleSqsError(e, messageBody, ack);
+            errorHandler.handleSqsError(e, ack);
         }
 
         ack.acknowledge();

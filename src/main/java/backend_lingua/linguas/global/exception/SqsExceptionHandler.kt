@@ -13,7 +13,6 @@ class SqsErrorHandler {
 
     fun handleSqsError(
         exception: Exception,
-        messageBody: String,
         acknowledgement: Acknowledgement?
     ) {
         val errorDetails = when (exception) {
@@ -29,12 +28,11 @@ class SqsErrorHandler {
         }
 
         // DLQ(Dead Letter Queue)로 이동하거나 재시도 로직
-        handleFailedMessage(acknowledgement, messageBody, errorDetails)
+        handleFailedMessage(acknowledgement, errorDetails)
     }
 
     private fun handleFailedMessage(
         ack: Acknowledgement?,
-        messageBody: String,
         error: BusinessException
     ) {
         // 재시도 횟수 확인 후 DLQ로 이동 또는 ACK 처리
